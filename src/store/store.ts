@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { AgentConfig, ApiKeys, Message, ChatSession } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
+import { createDefaultAgent, DEFAULT_ENABLED_MODELS } from '@/constants';
 
 interface AppState {
   apiKeys: ApiKeys;
@@ -36,47 +37,11 @@ export const useStore = create<AppState>()(
   persist(
     (set, get) => ({
       apiKeys: {},
-      agents: [
-        {
-          id: 'default',
-          name: 'General Assistant',
-          systemPrompt: 'You are a helpful AI assistant.',
-          model: 'glm-4.6',
-          temperature: 0.7,
-        }
-      ],
+      agents: [createDefaultAgent()],
       currentAgentId: 'default',
       sessions: [],
       currentSessionId: null,
-      enabledModels: [
-        // ZAI Models
-        'glm-4.6',
-        'glm-4.5',
-        'glm-4.5-air',
-        'glm-4.5-x',
-        'glm-4.5-airx',
-        'glm-4.5-flash',
-        
-        // OpenRouter Models
-        'anthropic/claude-haiku-4.5',
-        'openai/gpt-4o-mini',
-        
-        // Qwen Models
-        'qwen/qwen3-vl-8b-thinking',
-        'qwen/qwen3-vl-8b-instruct',
-        'qwen/qwen3-vl-30b-a3b-thinking',
-        'qwen/qwen3-vl-30b-a3b-instruct',
-        'qwen/qwen3-vl-235b-a22b-thinking',
-        'qwen/qwen3-vl-235b-a22b-instruct',
-        'qwen/qwen3-max',
-        'qwen/qwen3-coder-plus',
-        'qwen/qwen3-coder-flash',
-        'qwen/qwen3-next-80b-a3b-thinking',
-        'qwen/qwen3-next-80b-a3b-instruct',
-        'qwen/qwen-plus-2025-07-28',
-        'qwen/qwen-plus-2025-07-28:thinking',
-        'qwen/qwen3-30b-a3b-thinking-2507',
-      ],
+      enabledModels: DEFAULT_ENABLED_MODELS,
 
       setApiKey: (provider, key) => 
         set((state) => ({ apiKeys: { ...state.apiKeys, [provider]: key } })),

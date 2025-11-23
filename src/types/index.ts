@@ -28,7 +28,8 @@ export interface AgentConfig {
   frequencyPenalty?: number;
   presencePenalty?: number;
   seed?: number;
-  responseFormat?: 'text' | 'json_object';
+  responseFormat?: 'text' | 'json_object' | 'xml';
+  responseSchema?: string;
 }
 
 export interface ApiKeys {

@@ -1,46 +1,37 @@
 import { AgentConfig, Message } from '@/types';
 
-interface ChatCompletionRequest {
-  model: string;
-  messages: { role: string; content: string }[];
-  temperature?: number;
-  top_p?: number;
-  stream?: boolean;
-  response_format?: { type: 'text' | 'json_object' };
-}
+export const getProviderForModel = (model: string): { provider: 'zai' | 'openRouter', baseUrl: string } => {
+  if (model.startsWith('glm')) {
+    return { provider: 'zai', baseUrl: 'https://api.z.ai/api/coding/paas/v4' };
+  }
+  return { provider: 'openRouter', baseUrl: 'https://openrouter.ai/api/v1' };
+};
 
 export const sendMessage = async (
-  apiKey: string,
-  baseUrl: string,
+  apiKeys: { zai?: string; openRouter?: string },
   messages: Message[],
   agentConfig: AgentConfig,
   onChunk: (chunk: string) => void
 ): Promise<{ content: string; metrics?: Message['metrics'] }> => {
   const startTime = Date.now();
-  const systemMessage = { role: 'system', content: agentConfig.systemPrompt };
+  const { provider, baseUrl } = getProviderForModel(agentConfig.model);
+  const apiKey = apiKeys[provider];
+
+  if (!apiKey) {
+    throw new Error(`${provider === 'zai' ? 'ZAI' : 'OpenRouter'} API Key not found. Please configure it in settings.`);
+  }
+
+  let systemContent = agentConfig.systemPrompt;
+  if (agentConfig.responseSchema) {
+    const format = agentConfig.responseFormat === 'xml' ? 'xml' : 'json';
+    systemContent += `\n\nIMPORTANT: You must respond in ${format === 'xml' ? 'XML' : 'JSON'} format following this structure:\n${agentConfig.responseSchema}\n\nWrap your entire response in a markdown code block (\`\`\`${format} ... \`\`\`).`;
+  }
+
+  const systemMessage = { role: 'system', content: systemContent };
   const apiMessages = [
     systemMessage,
     ...messages.map((m) => ({ role: m.role, content: m.content })),
   ];
-
-  const body: ChatCompletionRequest = {
-    model: agentConfig.model,
-    messages: apiMessages,
-    temperature: agentConfig.temperature,
-    top_p: agentConfig.topP,
-    stream: true,
-  };
-
-  // Add advanced settings if present
-  if (agentConfig.maxTokens) (body as any).max_tokens = agentConfig.maxTokens;
-  if (agentConfig.frequencyPenalty) (body as any).frequency_penalty = agentConfig.frequencyPenalty;
-  if (agentConfig.presencePenalty) (body as any).presence_penalty = agentConfig.presencePenalty;
-  if (agentConfig.seed) (body as any).seed = agentConfig.seed;
-  if (agentConfig.topK) (body as any).top_k = agentConfig.topK;
-
-  if (agentConfig.responseFormat === 'json_object') {
-    body.response_format = { type: 'json_object' };
-  }
 
   try {
     const response = await fetch(`${baseUrl}/chat/completions`, {
@@ -48,10 +39,24 @@ export const sendMessage = async (
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
-        'HTTP-Referer': 'https://legion.ai',
-        'X-Title': 'Legion AI',
+        ...(provider === 'openRouter' ? {
+          'HTTP-Referer': 'https://github.com/legion-ai',
+          'X-Title': 'Legion AI',
+        } : {})
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        model: agentConfig.model,
+        messages: apiMessages,
+        stream: true,
+        temperature: agentConfig.temperature,
+        max_tokens: agentConfig.maxTokens,
+        top_p: agentConfig.topP,
+        frequency_penalty: agentConfig.frequencyPenalty,
+        presence_penalty: agentConfig.presencePenalty,
+        ...(agentConfig.responseFormat === 'json_object' ? { response_format: { type: 'json_object' } } : {}),
+        ...(agentConfig.seed ? { seed: agentConfig.seed } : {}),
+        ...(agentConfig.topK ? { top_k: agentConfig.topK } : {}),
+      }),
     });
 
     if (!response.ok) {
@@ -127,13 +132,6 @@ export const sendMessage = async (
       if (usage.completion_tokens && latency > 0) {
         metrics.speed = parseFloat((usage.completion_tokens / (latency / 1000)).toFixed(2));
       }
-
-      // Estimate cost (very rough estimation, ideally should come from API or a map)
-      // OpenRouter sometimes provides cost in response, but if not we can't easily know.
-      // However, the user asked for "how much money spent". 
-      // Some OpenRouter responses include `x-openrouter-cost` header? Or usage field might have it?
-      // Let's check if usage has cost. Usually not standard OpenAI format.
-      // But we can leave cost undefined for now if not available.
     }
 
     return { content: fullContent, metrics };

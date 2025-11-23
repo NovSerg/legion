@@ -20,6 +20,11 @@ import {
   IconButton
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
+import Editor from 'react-simple-code-editor';
+import { highlight, languages } from 'prismjs';
+import 'prismjs/components/prism-json';
+import 'prismjs/components/prism-xml-doc';
+import 'prismjs/themes/prism-dark.css'; // Or another theme
 
 interface AgentSettingsProps {
   isOpen: boolean;
@@ -119,13 +124,72 @@ export const AgentSettings = ({ isOpen, onClose, agentId }: AgentSettingsProps) 
               <Select
                 value={formData.responseFormat || 'text'}
                 label="Формат ответа"
-                onChange={(e) => handleChange('responseFormat', e.target.value as 'text' | 'json_object')}
+                onChange={(e) => {
+                  const newFormat = e.target.value as 'text' | 'json_object' | 'xml';
+                  let newSchema = formData.responseSchema;
+                  
+                  const DEFAULT_JSON = '{\n  "key": "value"\n}';
+                  const DEFAULT_XML = '<?xml version="1.0" encoding="UTF-8"?>\n<root>\n  <element>value</element>\n</root>';
+
+                  if (newFormat === 'json_object') {
+                    if (!newSchema || newSchema === DEFAULT_XML) {
+                      newSchema = DEFAULT_JSON;
+                    }
+                  } else if (newFormat === 'xml') {
+                    if (!newSchema || newSchema === DEFAULT_JSON) {
+                      newSchema = DEFAULT_XML;
+                    }
+                  }
+                  
+                  handleChange('responseFormat', newFormat);
+                  if (newSchema !== formData.responseSchema) {
+                    handleChange('responseSchema', newSchema);
+                  }
+                }}
               >
                 <MenuItem value="text">Текст</MenuItem>
                 <MenuItem value="json_object">JSON Объект</MenuItem>
+                <MenuItem value="xml">XML</MenuItem>
               </Select>
             </FormControl>
           </Box>
+
+          {(formData.responseFormat === 'json_object' || formData.responseFormat === 'xml') && (
+            <Box sx={{ 
+              border: 1, 
+              borderColor: 'divider', 
+              borderRadius: 1, 
+              overflow: 'hidden',
+              bgcolor: 'action.hover',
+              '&:focus-within': {
+                borderColor: 'primary.main',
+                borderWidth: 2,
+              }
+            }}>
+              <Box sx={{ px: 1.5, py: 1, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
+                <Typography variant="caption" color="text.secondary">
+                  Структура {formData.responseFormat === 'json_object' ? 'JSON' : 'XML'}
+                </Typography>
+              </Box>
+              <Editor
+                value={formData.responseSchema || ''}
+                onValueChange={(code) => handleChange('responseSchema', code)}
+                highlight={(code) => highlight(
+                  code, 
+                  formData.responseFormat === 'json_object' ? languages.json : languages.xml, 
+                  formData.responseFormat === 'json_object' ? 'json' : 'xml'
+                )}
+                padding={15}
+                style={{
+                  fontFamily: '"Fira code", "Fira Mono", monospace',
+                  fontSize: 14,
+                  backgroundColor: 'transparent',
+                  minHeight: '150px',
+                }}
+                textareaClassName="focus:outline-none"
+              />
+            </Box>
+          )}
 
           <Box sx={{ mt: 2 }}>
             <Typography gutterBottom>Top P: {formData.topP || 1}</Typography>
@@ -197,7 +261,7 @@ export const AgentSettings = ({ isOpen, onClose, agentId }: AgentSettingsProps) 
           <Box sx={{ mt: 2 }}>
             <TextField
               fullWidth
-              label="Seed (Зерно)"
+              label="Seed"
               type="number"
               value={formData.seed || ''}
               onChange={(e) => handleChange('seed', parseInt(e.target.value) || undefined)}
