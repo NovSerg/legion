@@ -1,4 +1,5 @@
 import { AgentConfig, Message } from '@/types';
+import { loadIndex, search } from './rag/store';
 
 export const getProviderForModel = (model: string): { provider: 'zai' | 'openRouter', baseUrl: string } => {
   if (model.startsWith('glm')) {
@@ -21,7 +22,37 @@ export const sendMessage = async (
     throw new Error(`${provider === 'zai' ? 'ZAI' : 'OpenRouter'} API Key not found. Please configure it in settings.`);
   }
 
-  let systemContent = agentConfig.systemPrompt;
+  // RAG Integration
+  console.log('[RAG] Starting RAG integration...');
+  let contextString = '';
+  
+  // Find the last user message (not just the last message in the array)
+  const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
+  console.log('[RAG] Last user message:', lastUserMessage ? lastUserMessage.content.substring(0, 50) + '...' : 'none');
+  
+  if (lastUserMessage) {
+    const index = loadIndex();
+    console.log('[RAG] Index loaded:', index ? `${index.documents.length} docs, ${index.chunks.length} chunks` : 'null');
+    
+    if (index) {
+      try {
+        console.log('[RAG] Calling search with query:', lastUserMessage.content);
+        const results = await search(lastUserMessage.content, index);
+        console.log('[RAG] Search returned:', results.length, 'results');
+        
+        if (results.length > 0) {
+          contextString = `\n\nRelevant Context from Knowledge Base:\n${results.map(r => `--- ${r.chunk.metadata?.index ?? ''} ---\n${r.chunk.content}`).join('\n\n')}\n\nAnswer the user's question using the above context if relevant.`;
+          console.log('RAG Context found:', results.length, 'chunks');
+        } else {
+          console.log('[RAG] No results matched threshold');
+        }
+      } catch (e) {
+        console.error('RAG Search failed:', e);
+      }
+    }
+  }
+
+  let systemContent = agentConfig.systemPrompt + contextString;
   if (agentConfig.responseSchema) {
     const format = agentConfig.responseFormat === 'xml' ? 'xml' : 'json';
     systemContent += `\n\nIMPORTANT: You must respond in ${format === 'xml' ? 'XML' : 'JSON'} format following this structure:\n${agentConfig.responseSchema}\n\nWrap your entire response in a markdown code block (\`\`\`${format} ... \`\`\`).`;

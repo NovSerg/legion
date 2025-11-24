@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useStore } from '@/store/store';
 import { AgentConfig } from '@/types';
 import { fetchCredits } from '@/services/api';
+import { KnowledgeManager } from './rag/KnowledgeManager';
 import {
   Drawer,
   List,
@@ -23,7 +24,8 @@ import {
   Settings as SettingsIcon,
   Chat as ChatIcon,
   SmartToy as BotIcon,
-  Delete as DeleteIcon
+  Delete as DeleteIcon,
+  Storage as StorageIcon
 } from '@mui/icons-material';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -36,6 +38,7 @@ const drawerWidth = 280;
 export const Sidebar = ({ onOpenSettings }: SidebarProps) => {
   const { agents, currentAgentId, setCurrentAgent, addAgent, deleteAgent, sessions, currentSessionId, setCurrentSession, deleteSession, apiKeys } = useStore();
   const [balance, setBalance] = React.useState<number | null>(null);
+  const [showKnowledgeManager, setShowKnowledgeManager] = useState(false);
 
   React.useEffect(() => {
     const checkBalance = async () => {
@@ -82,6 +85,19 @@ export const Sidebar = ({ onOpenSettings }: SidebarProps) => {
       </Box>
       <Divider />
       
+      <Box sx={{ p: 1 }}>
+        <Button
+          fullWidth
+          startIcon={<StorageIcon />}
+          onClick={() => setShowKnowledgeManager(true)}
+          color="inherit"
+          sx={{ justifyContent: 'flex-start' }}
+        >
+          База знаний
+        </Button>
+      </Box>
+      <Divider />
+
       <Box sx={{ overflow: 'auto', flex: 1 }}>
         <List subheader={<Typography variant="caption" sx={{ px: 2, color: 'text.secondary' }}>АГЕНТЫ</Typography>}>
           {agents.map((agent) => (
@@ -167,6 +183,11 @@ export const Sidebar = ({ onOpenSettings }: SidebarProps) => {
           Настройки
         </Button>
       </Box>
+
+      <KnowledgeManager 
+        isOpen={showKnowledgeManager} 
+        onClose={() => setShowKnowledgeManager(false)} 
+      />
     </Drawer>
   );
 };

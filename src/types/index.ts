@@ -43,3 +43,31 @@ export interface ChatSession {
   messages: Message[];
   createdAt: number;
 }
+
+export interface Document {
+  id: string;
+  name: string;
+  content: string;
+  type: 'text' | 'markdown' | 'pdf';
+  createdAt: number;
+  chunks?: DocumentChunk[];
+}
+
+export interface DocumentChunk {
+  id: string;
+  documentId: string;
+  content: string;
+  embedding?: number[];
+  metadata?: Record<string, any>;
+}
+
+export interface VectorIndex {
+  version: number;
+  documents: Document[];
+  chunks: DocumentChunk[];
+}
+
+export interface SearchResult {
+  chunk: DocumentChunk;
+  score: number;
+}
