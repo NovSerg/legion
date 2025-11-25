@@ -22,37 +22,45 @@ export const sendMessage = async (
     throw new Error(`${provider === 'zai' ? 'ZAI' : 'OpenRouter'} API Key not found. Please configure it in settings.`);
   }
 
+  let systemContent = agentConfig.systemPrompt;
+
   // RAG Integration
-  console.log('[RAG] Starting RAG integration...');
-  let contextString = '';
-  
-  // Find the last user message (not just the last message in the array)
-  const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
-  console.log('[RAG] Last user message:', lastUserMessage ? lastUserMessage.content.substring(0, 50) + '...' : 'none');
-  
-  if (lastUserMessage) {
-    const index = loadIndex();
-    console.log('[RAG] Index loaded:', index ? `${index.documents.length} docs, ${index.chunks.length} chunks` : 'null');
+  if (agentConfig.ragMode && agentConfig.ragMode !== 'off') {
+    console.log('[RAG] Starting RAG integration...', agentConfig.ragMode);
+    let contextString = '';
     
-    if (index) {
-      try {
-        console.log('[RAG] Calling search with query:', lastUserMessage.content);
-        const results = await search(lastUserMessage.content, index);
-        console.log('[RAG] Search returned:', results.length, 'results');
-        
-        if (results.length > 0) {
-          contextString = `\n\nRelevant Context from Knowledge Base:\n${results.map(r => `--- ${r.chunk.metadata?.index ?? ''} ---\n${r.chunk.content}`).join('\n\n')}\n\nAnswer the user's question using the above context if relevant.`;
-          console.log('RAG Context found:', results.length, 'chunks');
-        } else {
-          console.log('[RAG] No results matched threshold');
+    // Find the last user message
+    const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
+    
+    if (lastUserMessage) {
+      const index = loadIndex();
+      
+      if (index) {
+        try {
+          const results = await search(lastUserMessage.content, index);
+          
+          if (results.length > 0) {
+            const context = results.map(r => `--- ${r.chunk.metadata?.index ?? ''} ---\n${r.chunk.content}`).join('\n\n');
+            
+            if (agentConfig.ragMode === 'strict') {
+              contextString = `\n\nCONTEXT FROM KNOWLEDGE BASE:\n${context}\n\nINSTRUCTIONS: You are a Strict RAG assistant. You must answer the user's question ONLY based on the provided context above. Do not use your internal knowledge. If the answer is not in the context, state that you do not know.`;
+            } else {
+              // Hybrid
+              contextString = `\n\nRelevant Context from Knowledge Base:\n${context}\n\nINSTRUCTIONS: Answer the user's question using the above context. You may use your internal knowledge to explain or supplement the answer, but prioritize the context.`;
+            }
+          } else {
+            console.log('[RAG] No results matched threshold');
+            if (agentConfig.ragMode === 'strict') {
+               contextString = `\n\nINSTRUCTIONS: You are a Strict RAG assistant. No relevant context was found in the knowledge base. Please inform the user that you cannot answer the question because no relevant information was found in the documents.`;
+            }
+          }
+        } catch (e) {
+          console.error('RAG Search failed:', e);
         }
-      } catch (e) {
-        console.error('RAG Search failed:', e);
       }
     }
+    systemContent += contextString;
   }
-
-  let systemContent = agentConfig.systemPrompt + contextString;
   if (agentConfig.responseSchema) {
     const format = agentConfig.responseFormat === 'xml' ? 'xml' : 'json';
     systemContent += `\n\nIMPORTANT: You must respond in ${format === 'xml' ? 'XML' : 'JSON'} format following this structure:\n${agentConfig.responseSchema}\n\nWrap your entire response in a markdown code block (\`\`\`${format} ... \`\`\`).`;

@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '@/store/store';
 import { sendMessage } from '@/services/api';
 
-import { Message } from '@/types';
+import { Message, AgentConfig } from '@/types';
 import {
   Box,
   Typography,
@@ -140,6 +140,123 @@ export const ChatArea = ({ onOpenAgentSettings }: ChatAreaProps) => {
     }
   };
 
+  const handleCompare = async () => {
+    if (!input.trim() || !currentAgent) return;
+
+    if (!currentSessionId) {
+      createSession(currentAgent.id);
+    }
+    
+    const state = useStore.getState();
+    const activeSessionId = state.currentSessionId;
+
+    if (!activeSessionId) return;
+
+    const userMsg: Message = {
+      id: crypto.randomUUID(),
+      role: 'user',
+      content: input,
+      timestamp: Date.now(),
+    };
+
+    addMessage(activeSessionId, userMsg);
+    setInput('');
+    setIsLoading(true);
+
+    // 1. Strict RAG Response
+    const strictMsgId = crypto.randomUUID();
+    const strictMsg: Message = {
+      id: strictMsgId,
+      role: 'assistant',
+      content: '🔒 **Strict RAG**:\n',
+      timestamp: Date.now(),
+    };
+    addMessage(activeSessionId, strictMsg);
+
+    // 2. Hybrid RAG Response
+    const hybridMsgId = crypto.randomUUID();
+    const hybridMsg: Message = {
+      id: hybridMsgId,
+      role: 'assistant',
+      content: '🌐 **Hybrid RAG**:\n',
+      timestamp: Date.now(),
+    };
+    addMessage(activeSessionId, hybridMsg);
+
+    // 3. No RAG Response
+    const noRagMsgId = crypto.randomUUID();
+    const noRagMsg: Message = {
+      id: noRagMsgId,
+      role: 'assistant',
+      content: '🧠 **No RAG**:\n',
+      timestamp: Date.now(),
+    };
+    addMessage(activeSessionId, noRagMsg);
+
+    const freshState = useStore.getState();
+    const currentMessages = freshState.sessions.find(s => s.id === activeSessionId)?.messages || [];
+    // Filter out the new assistant messages for the context
+    const contextMessages = currentMessages.filter(m => m.id !== strictMsgId && m.id !== hybridMsgId && m.id !== noRagMsgId);
+
+    try {
+      // Run all in parallel
+      const strictConfig = { ...currentAgent, ragMode: 'strict' as const };
+      const hybridConfig = { ...currentAgent, ragMode: 'hybrid' as const };
+      const noRagConfig = { ...currentAgent, ragMode: 'off' as const };
+
+      const createPromise = (config: AgentConfig, msgId: string) => 
+        sendMessage(
+          apiKeys,
+          contextMessages,
+          config,
+          (chunk) => {
+            useStore.setState((state) => {
+              const session = state.sessions.find(s => s.id === activeSessionId);
+              if (!session) return state;
+              
+              const msg = session.messages.find(m => m.id === msgId);
+              if (!msg) return state;
+
+              return {
+                sessions: state.sessions.map((s) =>
+                  s.id === activeSessionId
+                    ? {
+                        ...s,
+                        messages: s.messages.map((m) =>
+                          m.id === msgId ? { ...m, content: m.content + chunk } : m
+                        ),
+                      }
+                    : s
+                ),
+              };
+            });
+          }
+        );
+
+      const [strictRes, hybridRes, noRagRes] = await Promise.all([
+        createPromise(strictConfig, strictMsgId),
+        createPromise(hybridConfig, hybridMsgId),
+        createPromise(noRagConfig, noRagMsgId)
+      ]);
+
+      updateMessage(activeSessionId, strictMsgId, { metrics: strictRes.metrics });
+      updateMessage(activeSessionId, hybridMsgId, { metrics: hybridRes.metrics });
+      updateMessage(activeSessionId, noRagMsgId, { metrics: noRagRes.metrics });
+
+    } catch (error) {
+      console.error(error);
+      const errorMsg: Message = {
+        id: crypto.randomUUID(),
+        role: 'system',
+        content: `Error during comparison: ${(error as Error).message}`,
+        timestamp: Date.now(),
+      };
+      addMessage(activeSessionId, errorMsg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (!isMounted) {
     return null;
   }
@@ -186,6 +303,7 @@ export const ChatArea = ({ onOpenAgentSettings }: ChatAreaProps) => {
         input={input}
         setInput={setInput}
         handleSend={handleSend}
+        onCompare={handleCompare}
         isLoading={isLoading}
         agentName={currentAgent.name}
       />

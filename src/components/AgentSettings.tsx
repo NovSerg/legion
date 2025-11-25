@@ -94,6 +94,26 @@ export const AgentSettings = ({ isOpen, onClose, agentId }: AgentSettingsProps) 
             </FormControl>
           </Box>
 
+          <FormControl fullWidth sx={{ mt: 2 }}>
+            <InputLabel>Режим RAG</InputLabel>
+            <Select
+              value={formData.ragMode || 'off'}
+              label="Режим RAG"
+              onChange={(e) => handleChange('ragMode', e.target.value)}
+            >
+              <MenuItem value="off">Выключен (Off)</MenuItem>
+              <MenuItem value="hybrid">Гибридный (Hybrid)</MenuItem>
+              <MenuItem value="strict">Строгий (Strict)</MenuItem>
+            </Select>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+              {formData.ragMode === 'strict' 
+                ? 'Отвечает только по базе знаний. Если ответа нет — молчит.' 
+                : formData.ragMode === 'hybrid' 
+                  ? 'Использует базу знаний, но может дополнять ответ своими знаниями.' 
+                  : 'Использует только свои знания (LLM).'}
+            </Typography>
+          </FormControl>
+
           <TextField
             label="Системный промпт"
             multiline

@@ -1,11 +1,11 @@
-import React from 'react';
-import { Box, TextField, InputAdornment, IconButton, CircularProgress } from '@mui/material';
-import { Send as SendIcon } from '@mui/icons-material';
+import { Box, TextField, InputAdornment, IconButton, CircularProgress, Tooltip } from '@mui/material';
+import { Send as SendIcon, CompareArrows as CompareIcon } from '@mui/icons-material';
 
 interface ChatInputProps {
   input: string;
   setInput: (input: string) => void;
   handleSend: () => void;
+  onCompare: () => void;
   isLoading: boolean;
   agentName: string;
 }
@@ -14,6 +14,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   input,
   setInput,
   handleSend,
+  onCompare,
   isLoading,
   agentName,
 }) => {
@@ -38,6 +39,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               <IconButton onClick={handleSend} disabled={isLoading || !input.trim()} color="primary">
                 {isLoading ? <CircularProgress size={24} /> : <SendIcon />}
               </IconButton>
+              <Tooltip title="Сравнить (RAG vs Без RAG)">
+                <IconButton onClick={onCompare} disabled={isLoading || !input.trim()} color="secondary">
+                  <CompareIcon />
+                </IconButton>
+              </Tooltip>
             </InputAdornment>
           ),
         }}

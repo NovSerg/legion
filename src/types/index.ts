@@ -30,6 +30,7 @@ export interface AgentConfig {
   seed?: number;
   responseFormat?: 'text' | 'json_object' | 'xml';
   responseSchema?: string;
+  ragMode?: 'off' | 'hybrid' | 'strict';
 }
 
 export interface ApiKeys {

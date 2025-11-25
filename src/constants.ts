@@ -46,6 +46,7 @@ export const createDefaultAgent = (): AgentConfig => ({
   systemPrompt: 'You are a helpful AI assistant.',
   model: 'glm-4.6',
   temperature: 0.7,
+  ragMode: 'off',
 });
 
 export const createNewAgent = (): AgentConfig => ({
@@ -54,4 +55,5 @@ export const createNewAgent = (): AgentConfig => ({
   systemPrompt: 'Ты полезный ИИ-ассистент.',
   model: 'glm-4.6',
   temperature: 0.7,
+  ragMode: 'off',
 });
