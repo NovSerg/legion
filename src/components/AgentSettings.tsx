@@ -17,7 +17,9 @@ import {
   Slider,
   Typography,
   Box,
-  IconButton
+  IconButton,
+  Switch,
+  FormControlLabel
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import Editor from 'react-simple-code-editor';
@@ -113,6 +115,41 @@ export const AgentSettings = ({ isOpen, onClose, agentId }: AgentSettingsProps) 
                   : 'Использует только свои знания (LLM).'}
             </Typography>
           </FormControl>
+
+          {(formData.ragMode === 'hybrid' || formData.ragMode === 'strict') && (
+            <Box sx={{ mt: 2, pl: 2, borderLeft: 2, borderColor: 'divider' }}>
+              <Typography variant="subtitle2" gutterBottom>Настройки поиска (RAG)</Typography>
+              
+              <Box sx={{ mt: 2 }}>
+                <Typography gutterBottom>Порог релевантности: {formData.ragThreshold ?? 0.1}</Typography>
+                <Slider
+                  value={formData.ragThreshold ?? 0.1}
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  onChange={(_, value) => handleChange('ragThreshold', value as number)}
+                  valueLabelDisplay="auto"
+                />
+                <Typography variant="caption" color="text.secondary">
+                  Минимальный коэффициент схожести (0-1). Чем выше, тем строже отбор.
+                </Typography>
+              </Box>
+
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.ragRerank ?? false}
+                    onChange={(e) => handleChange('ragRerank', e.target.checked)}
+                  />
+                }
+                label="Включить MMR Reranking"
+                sx={{ mt: 2 }}
+              />
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', ml: 4 }}>
+                Улучшает разнообразие результатов, уменьшая дубликаты.
+              </Typography>
+            </Box>
+          )}
 
           <TextField
             label="Системный промпт"

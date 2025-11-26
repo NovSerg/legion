@@ -45,8 +45,25 @@ const cosineSimilarity = (a: number[], b: number[]) => {
 };
 
 // Simple keyword matching score (BM25-like)
+// Simple keyword matching score (BM25-like)
+// Simple keyword matching score (BM25-like)
 const keywordScore = (query: string, text: string): number => {
-  const queryTerms = query.toLowerCase().split(/\s+/).filter(t => t.length > 2);
+  // Split by whitespace
+  const rawTerms = query.toLowerCase().split(/\s+/);
+  
+  // Clean terms: remove punctuation from start/end
+  const queryTerms = rawTerms.map(t => {
+    return t.replace(/[?.,!;:"')\]}]+$/, '').replace(/^[(\[{'"]+/, '');
+  }).filter(t => {
+    // Filter out empty strings after cleanup
+    if (!t) return false;
+    
+    if (t.length > 2) return true;
+    // Allow short tokens if they have symbols (e.g. ==, &&, ||, !=)
+    if (/[^a-z0-9]/i.test(t)) return true; 
+    return false;
+  });
+
   const textLower = text.toLowerCase();
   
   if (queryTerms.length === 0) return 0;
@@ -58,6 +75,11 @@ const keywordScore = (query: string, text: string): number => {
     }
   }
   
+  // DEBUG LOGGING
+  if (matches > 0) {
+     console.log(`[KeywordDebug] QueryTerms: ${JSON.stringify(queryTerms)} | Matches: ${matches} | Score: ${matches / queryTerms.length}`);
+  }
+  
   return matches / queryTerms.length;
 };
 
@@ -65,7 +87,8 @@ export const search = async (
   query: string, 
   index: VectorIndex, 
   topK: number = 3,
-  threshold: number = 0.1
+  threshold: number = 0.1,
+  useReranker: boolean = false
 ): Promise<SearchResult[]> => {
   if (!index.chunks.length) return [];
 
@@ -102,9 +125,57 @@ export const search = async (
     console.log(`Score: ${r.score.toFixed(4)} | Content: ${r.chunk.content.substring(0, 50)}...`);
   });
 
-  const results = allResults
-    .filter((result) => result.score >= threshold)
-    .slice(0, topK);
+  let results: SearchResult[] = [];
+
+  if (useReranker) {
+    console.log('Applying MMR Reranking...');
+    // Get top candidates (3x topK) for reranking
+    const candidates = allResults.slice(0, topK * 3);
+    
+    // MMR Logic
+    const selected: SearchResult[] = [];
+    const remaining = [...candidates];
+    const lambda = 0.7; // Balance between relevance (0.7) and diversity (0.3)
+
+    while (selected.length < topK && remaining.length > 0) {
+      let bestScore = -Infinity;
+      let bestIdx = -1;
+
+      for (let i = 0; i < remaining.length; i++) {
+        const item = remaining[i];
+        const relevance = item.score;
+        
+        let maxSimToSelected = 0;
+        for (const sel of selected) {
+          if (item.chunk.embedding && sel.chunk.embedding) {
+            const sim = cosineSimilarity(item.chunk.embedding, sel.chunk.embedding);
+            if (sim > maxSimToSelected) maxSimToSelected = sim;
+          }
+        }
+
+        // MMR = λ * Relevance - (1 - λ) * Redundancy
+        const mmrScore = lambda * relevance - (1 - lambda) * maxSimToSelected;
+
+        if (mmrScore > bestScore) {
+          bestScore = mmrScore;
+          bestIdx = i;
+        }
+      }
+
+      if (bestIdx !== -1) {
+        selected.push(remaining[bestIdx]);
+        remaining.splice(bestIdx, 1);
+      } else {
+        break;
+      }
+    }
+    results = selected;
+  } else {
+    results = allResults.slice(0, topK);
+  }
+
+  // Final filter by threshold
+  results = results.filter((result) => result.score >= threshold);
     
   console.log(`Found ${results.length} results above threshold ${threshold}`);
 

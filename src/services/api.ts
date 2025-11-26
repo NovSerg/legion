@@ -37,7 +37,13 @@ export const sendMessage = async (
       
       if (index) {
         try {
-          const results = await search(lastUserMessage.content, index);
+          const results = await search(
+            lastUserMessage.content, 
+            index,
+            agentConfig.topK || 3,
+            agentConfig.ragThreshold ?? 0.1,
+            agentConfig.ragRerank ?? false
+          );
           
           if (results.length > 0) {
             const context = results.map(r => `--- ${r.chunk.metadata?.index ?? ''} ---\n${r.chunk.content}`).join('\n\n');

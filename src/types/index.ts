@@ -31,6 +31,8 @@ export interface AgentConfig {
   responseFormat?: 'text' | 'json_object' | 'xml';
   responseSchema?: string;
   ragMode?: 'off' | 'hybrid' | 'strict';
+  ragThreshold?: number;
+  ragRerank?: boolean;
 }
 
 export interface ApiKeys {
