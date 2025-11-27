@@ -110,8 +110,9 @@ export const search = async (
         : 0;
       const keywordSimilarity = keywordScore(query, chunk.content);
       
-      // Combine scores: 70% semantic, 30% keyword
-      const combinedScore = semanticScore * 0.7 + keywordSimilarity * 0.3;
+      // Combine scores: 30% semantic, 70% keyword
+      // Drastic shift to favor exact keyword matches for this knowledge base
+      const combinedScore = semanticScore * 0.3 + keywordSimilarity * 0.7;
       
       return {
         chunk,
@@ -176,8 +177,15 @@ export const search = async (
 
   // Final filter by threshold
   results = results.filter((result) => result.score >= threshold);
+
+  // Relative score filtering: if we have a very good match, drop significantly worse ones
+  if (results.length > 0) {
+    const bestScore = results[0].score;
+    // Keep results that are within 15% of the best score
+    results = results.filter(r => r.score >= bestScore * 0.85);
+  }
     
-  console.log(`Found ${results.length} results above threshold ${threshold}`);
+  console.log(`Found ${results.length} results above threshold ${threshold} (and relative filter)`);
 
   return results;
 };

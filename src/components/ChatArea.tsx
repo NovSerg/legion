@@ -102,7 +102,7 @@ export const ChatArea = ({ onOpenAgentSettings }: ChatAreaProps) => {
     let fullContent = '';
 
     try {
-      const { content, metrics } = await sendMessage(
+      const { content, metrics, sources } = await sendMessage(
         apiKeys,
         currentMessages,
         currentAgent,
@@ -123,8 +123,8 @@ export const ChatArea = ({ onOpenAgentSettings }: ChatAreaProps) => {
         }
       );
 
-      // Update message with final metrics
-      updateMessage(activeSessionId, assistantMsgId, { metrics });
+      // Update message with final metrics and sources
+      updateMessage(activeSessionId, assistantMsgId, { metrics, sources });
 
     } catch (error) {
       console.error(error);
@@ -239,9 +239,9 @@ export const ChatArea = ({ onOpenAgentSettings }: ChatAreaProps) => {
         createPromise(noRagConfig, noRagMsgId)
       ]);
 
-      updateMessage(activeSessionId, strictMsgId, { metrics: strictRes.metrics });
-      updateMessage(activeSessionId, hybridMsgId, { metrics: hybridRes.metrics });
-      updateMessage(activeSessionId, noRagMsgId, { metrics: noRagRes.metrics });
+      updateMessage(activeSessionId, strictMsgId, { metrics: strictRes.metrics, sources: strictRes.sources });
+      updateMessage(activeSessionId, hybridMsgId, { metrics: hybridRes.metrics, sources: hybridRes.sources });
+      updateMessage(activeSessionId, noRagMsgId, { metrics: noRagRes.metrics, sources: noRagRes.sources });
 
     } catch (error) {
       console.error(error);

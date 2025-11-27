@@ -20,9 +20,11 @@ export const terminateWorker = () => {
   }
 };
 
-export const chunkText = (text: string, size: number = 1500, overlap: number = 200): string[] => {
-  const chunks: string[] = [];
+export const chunkText = (text: string, size: number = 1500, overlap: number = 200): { content: string; lineStart: number; lineEnd: number }[] => {
+  const chunks: { content: string; lineStart: number; lineEnd: number }[] = [];
   let start = 0;
+
+  const countLines = (str: string) => (str.match(/\n/g) || []).length;
 
   while (start < text.length) {
     let end = start + size;
@@ -39,9 +41,23 @@ export const chunkText = (text: string, size: number = 1500, overlap: number = 2
       }
     }
 
-    const chunk = text.slice(start, end).trim();
-    if (chunk.length > 0) {
-      chunks.push(chunk);
+    const chunkContent = text.slice(start, end).trim();
+    if (chunkContent.length > 0) {
+      // Calculate line numbers
+      // Lines before this chunk
+      const textBefore = text.slice(0, start);
+      const lineStart = countLines(textBefore) + 1;
+      
+      // Lines in this chunk (approximate based on original text slice to handle trim)
+      // Actually, better to count lines in the slice before trim, or just count newlines in textBefore + slice
+      const textUntilEnd = text.slice(0, end);
+      const lineEnd = countLines(textUntilEnd) + 1;
+
+      chunks.push({
+        content: chunkContent,
+        lineStart,
+        lineEnd
+      });
     }
 
     start = end - overlap;
@@ -108,19 +124,26 @@ export const buildIndex = async (
     };
 
     onProgress?.(`Generating embeddings for ${name}...`);
-    const embeddings = await getEmbeddings(textChunks, (p) => {
+    // Extract just content for embedding generation
+    const chunkContents = textChunks.map(c => c.content);
+    const embeddings = await getEmbeddings(chunkContents, (p) => {
       if (p.status === 'progress') {
         onProgress?.(`Loading model... ${Math.round(p.progress || 0)}%`);
       }
     });
 
-    textChunks.forEach((chunkText, index) => {
+    textChunks.forEach((chunkData, index) => {
       const chunk: DocumentChunk = {
         id: uuidv4(),
         documentId: docId,
-        content: chunkText,
+        content: chunkData.content,
         embedding: embeddings[index],
-        metadata: { ...metadata, index }
+        metadata: { 
+          ...metadata, 
+          index,
+          lineStart: chunkData.lineStart,
+          lineEnd: chunkData.lineEnd
+        }
       };
       doc.chunks?.push(chunk);
       allChunks.push(chunk);

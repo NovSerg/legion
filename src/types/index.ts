@@ -14,6 +14,12 @@ export interface Message {
     speed?: number; // tokens per second
     model?: string;
   };
+  sources?: {
+    id: string;
+    name: string;
+    content: string;
+    metadata?: any;
+  }[];
 }
 
 export interface AgentConfig {
@@ -61,7 +67,12 @@ export interface DocumentChunk {
   documentId: string;
   content: string;
   embedding?: number[];
-  metadata?: Record<string, any>;
+  metadata?: {
+    source?: string;
+    lineStart?: number;
+    lineEnd?: number;
+    [key: string]: any;
+  };
 }
 
 export interface VectorIndex {

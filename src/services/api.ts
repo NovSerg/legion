@@ -13,7 +13,7 @@ export const sendMessage = async (
   messages: Message[],
   agentConfig: AgentConfig,
   onChunk: (chunk: string) => void
-): Promise<{ content: string; metrics?: Message['metrics'] }> => {
+): Promise<{ content: string; metrics?: Message['metrics']; sources?: Message['sources'] }> => {
   const startTime = Date.now();
   const { provider, baseUrl } = getProviderForModel(agentConfig.model);
   const apiKey = apiKeys[provider];
@@ -23,6 +23,7 @@ export const sendMessage = async (
   }
 
   let systemContent = agentConfig.systemPrompt;
+  let sources: Message['sources'] = undefined;
 
   // RAG Integration
   if (agentConfig.ragMode && agentConfig.ragMode !== 'off') {
@@ -46,13 +47,28 @@ export const sendMessage = async (
           );
           
           if (results.length > 0) {
-            const context = results.map(r => `--- ${r.chunk.metadata?.index ?? ''} ---\n${r.chunk.content}`).join('\n\n');
+            // Capture sources
+            sources = results.map((r, i) => ({
+              id: (i + 1).toString(),
+              name: r.chunk.metadata?.source || 'Unknown Source',
+              content: r.chunk.content,
+              metadata: {
+                ...r.chunk.metadata,
+                score: r.score // Pass the score to the UI
+              }
+            }));
+
+            // Format context with citation IDs
+            const context = results.map((r, i) => {
+              const sourceName = r.chunk.metadata?.source || 'Unknown Source';
+              return `[${i + 1}] Source: ${sourceName}\nContent: ${r.chunk.content}`;
+            }).join('\n\n');
             
             if (agentConfig.ragMode === 'strict') {
-              contextString = `\n\nCONTEXT FROM KNOWLEDGE BASE:\n${context}\n\nINSTRUCTIONS: You are a Strict RAG assistant. You must answer the user's question ONLY based on the provided context above. Do not use your internal knowledge. If the answer is not in the context, state that you do not know.`;
+              contextString = `\n\nCONTEXT FROM KNOWLEDGE BASE:\n${context}\n\nINSTRUCTIONS: You are a Strict RAG assistant. You must answer the user's question ONLY based on the provided context above. \nIMPORTANT: You must cite your sources using the format [1], [2], etc. corresponding to the context chunks used. If the answer is not in the context, state that you do not know.`;
             } else {
               // Hybrid
-              contextString = `\n\nRelevant Context from Knowledge Base:\n${context}\n\nINSTRUCTIONS: Answer the user's question using the above context. You may use your internal knowledge to explain or supplement the answer, but prioritize the context.`;
+              contextString = `\n\nRelevant Context from Knowledge Base:\n${context}\n\nINSTRUCTIONS: Answer the user's question using the above context. You may use your internal knowledge to explain or supplement the answer, but prioritize the context. \nIMPORTANT: When using information from the context, you MUST cite the source using the format [1], [2], etc.`;
             }
           } else {
             console.log('[RAG] No results matched threshold');
@@ -67,6 +83,7 @@ export const sendMessage = async (
     }
     systemContent += contextString;
   }
+
   if (agentConfig.responseSchema) {
     const format = agentConfig.responseFormat === 'xml' ? 'xml' : 'json';
     systemContent += `\n\nIMPORTANT: You must respond in ${format === 'xml' ? 'XML' : 'JSON'} format following this structure:\n${agentConfig.responseSchema}\n\nWrap your entire response in a markdown code block (\`\`\`${format} ... \`\`\`).`;
@@ -179,7 +196,7 @@ export const sendMessage = async (
       }
     }
 
-    return { content: fullContent, metrics };
+    return { content: fullContent, metrics, sources };
   } catch (error) {
     console.error('Error sending message:', error);
     throw error;
