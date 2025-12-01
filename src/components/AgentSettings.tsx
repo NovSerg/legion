@@ -19,7 +19,9 @@ import {
   Box,
   IconButton,
   Switch,
-  FormControlLabel
+  FormControlLabel,
+  Tabs,
+  Tab
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import Editor from 'react-simple-code-editor';
@@ -27,6 +29,34 @@ import { highlight, languages } from 'prismjs';
 import 'prismjs/components/prism-json';
 import 'prismjs/components/prism-xml-doc';
 import 'prismjs/themes/prism-dark.css'; // Or another theme
+import { McpSettings } from './settings/McpSettings';
+
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function CustomTabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props;
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`simple-tabpanel-${index}`}
+      aria-labelledby={`simple-tab-${index}`}
+      {...other}
+    >
+      {value === index && (
+        <Box sx={{ py: 3 }}>
+          {children}
+        </Box>
+      )}
+    </div>
+  );
+}
+
 
 interface AgentSettingsProps {
   isOpen: boolean;
@@ -39,6 +69,12 @@ export const AgentSettings = ({ isOpen, onClose, agentId }: AgentSettingsProps) 
   const agent = agents.find((a) => a.id === agentId);
   
   const [formData, setFormData] = useState<Partial<AgentConfig>>({});
+  const [activeTab, setActiveTab] = useState(0);
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
+  };
+
 
   useEffect(() => {
     if (agent) {
@@ -72,7 +108,16 @@ export const AgentSettings = ({ isOpen, onClose, agentId }: AgentSettingsProps) 
         </IconButton>
       </DialogTitle>
       <DialogContent dividers>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Tabs value={activeTab} onChange={handleTabChange} aria-label="agent settings tabs">
+            <Tab label="Основные" />
+            <Tab label="MCP Серверы" />
+          </Tabs>
+        </Box>
+
+        <CustomTabPanel value={activeTab} index={0}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+
           <Box sx={{ display: 'flex', gap: 2 }}>
             <TextField
               label="Имя"
@@ -326,6 +371,12 @@ export const AgentSettings = ({ isOpen, onClose, agentId }: AgentSettingsProps) 
             />
           </Box>
         </Box>
+        </CustomTabPanel>
+
+        <CustomTabPanel value={activeTab} index={1}>
+          <McpSettings />
+        </CustomTabPanel>
+
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Отмена</Button>

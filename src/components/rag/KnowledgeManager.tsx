@@ -12,12 +12,16 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Alert
+  Alert,
+  Checkbox,
+  FormControlLabel,
+  CircularProgress
 } from '@mui/material';
 import { Upload, Trash2, Database, RefreshCw, FileText } from 'lucide-react';
 import { buildIndex } from '@/services/rag/pipeline';
 import { saveIndex, loadIndex, clearIndex } from '@/services/rag/store';
 import { VectorIndex } from '@/types';
+import { useStore } from '@/store/store';
 
 interface KnowledgeManagerProps {
   isOpen: boolean;
@@ -31,6 +35,11 @@ export const KnowledgeManager: React.FC<KnowledgeManagerProps> = ({ isOpen, onCl
   const [stagedFiles, setStagedFiles] = useState<File[]>([]);
   const [isDragActive, setIsDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [projectFiles, setProjectFiles] = useState<string[]>([]);
+  const [selectedProjectFiles, setSelectedProjectFiles] = useState<string[]>([]);
+  const [isLoadingFiles, setIsLoadingFiles] = useState(false);
 
   const loadIndexInfo = () => {
     const loaded = loadIndex();
@@ -128,7 +137,102 @@ export const KnowledgeManager: React.FC<KnowledgeManagerProps> = ({ isOpen, onCl
     downloadAnchorNode.remove();
   };
 
+  // Helper to fetch files from MCP (git server)
+  const fetchProjectFiles = async () => {
+    setIsLoadingFiles(true);
+    try {
+      const { mcpService } = await import('@/services/mcp');
+
+      const servers = useStore.getState().mcpServers;
+      // Look for 'git' server
+      const gitServer = servers.find(s => s.name === 'git' && s.status === 'connected');
+
+      if (!gitServer) {
+        alert("Please connect the 'git' MCP server first to import files from repository.");
+        setIsLoadingFiles(false);
+        return;
+      }
+
+      // Use git ls-files - returns all tracked files, respects .gitignore
+      const result = await mcpService.executeTool(gitServer.id, 'list_files', {});
+
+      if (result && typeof result === 'object' && 'content' in result) {
+        const textContent = (result as any).content[0]?.text;
+        if (textContent) {
+          // git ls-files returns simple list of file paths, one per line
+          const files = textContent
+            .split('\n')
+            .map((f: string) => f.trim())
+            .filter((f: string) => f.length > 0);
+          setProjectFiles(files);
+        }
+      }
+
+    } catch (error) {
+      console.error("Failed to fetch files", error);
+    } finally {
+      setIsLoadingFiles(false);
+    }
+  };
+
+  const handleOpenImport = () => {
+    setIsImportDialogOpen(true);
+    fetchProjectFiles();
+  };
+
+  const handleToggleFileSelection = (file: string) => {
+    if (selectedProjectFiles.includes(file)) {
+      setSelectedProjectFiles(prev => prev.filter(f => f !== file));
+    } else {
+      setSelectedProjectFiles(prev => [...prev, file]);
+    }
+  };
+
+  const handleSelectAll = () => {
+    if (selectedProjectFiles.length === projectFiles.length) {
+      setSelectedProjectFiles([]);
+    } else {
+      setSelectedProjectFiles([...projectFiles]);
+    }
+  };
+
+  const [isImporting, setIsImporting] = useState(false);
+
+  const handleImportSelected = async () => {
+    setIsImporting(true);
+    
+    const { mcpService } = await import('@/services/mcp');
+    const servers = useStore.getState().mcpServers;
+    const gitServer = servers.find(s => s.name === 'git' && s.status === 'connected');
+    
+    if (!gitServer) {
+        setIsImporting(false);
+        return;
+    }
+
+    const newFiles: File[] = [];
+
+    for (const fileName of selectedProjectFiles) {
+        try {
+            // Use read_file from git server
+            const result = await mcpService.executeTool(gitServer.id, 'read_file', { filePath: fileName });
+            const content = (result as any).content[0]?.text || '';
+            
+            const file = new File([content], fileName, { type: 'text/plain' });
+            newFiles.push(file);
+        } catch (e) {
+            console.error(`Failed to read ${fileName}`, e);
+        }
+    }
+
+    setStagedFiles(prev => [...prev, ...newFiles]);
+    setSelectedProjectFiles([]);
+    setIsImporting(false);
+    setIsImportDialogOpen(false);
+  };
+
   return (
+    <>
     <Dialog open={isOpen} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         <Database size={24} />
@@ -166,37 +270,52 @@ export const KnowledgeManager: React.FC<KnowledgeManagerProps> = ({ isOpen, onCl
 
         <Box sx={{ mb: 4 }}>
           <Typography variant="h6" gutterBottom>Add Documents</Typography>
-          <Box 
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
-            sx={{ 
-              border: '2px dashed',
-              borderColor: isDragActive ? 'primary.main' : 'divider',
-              borderRadius: 2,
-              p: 4,
-              textAlign: 'center',
-              bgcolor: isDragActive ? 'action.hover' : 'background.paper',
-              transition: 'all 0.2s',
-              cursor: 'pointer'
-            }}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <input
-              type="file"
-              multiple
-              accept=".txt,.md,.json"
-              style={{ display: 'none' }}
-              ref={fileInputRef}
-              onChange={handleFileUpload}
-            />
-            <Button variant="outlined" component="span" startIcon={<Upload />}>
-              Select Files to Add
-            </Button>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              or drag and drop files here (.txt, .md, .json)
-            </Typography>
+          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+             <Box 
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+                sx={{ 
+                  flex: 1,
+                  border: '2px dashed',
+                  borderColor: isDragActive ? 'primary.main' : 'divider',
+                  borderRadius: 2,
+                  p: 4,
+                  textAlign: 'center',
+                  bgcolor: isDragActive ? 'action.hover' : 'background.paper',
+                  transition: 'all 0.2s',
+                  cursor: 'pointer'
+                }}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input
+                  type="file"
+                  multiple
+                  accept=".txt,.md,.json"
+                  style={{ display: 'none' }}
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                />
+                <Button variant="outlined" component="span" startIcon={<Upload />}>
+                  Upload Files
+                </Button>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                  or drag and drop files here
+                </Typography>
+              </Box>
+              
+              <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1, textAlign: 'center' }}>OR</Typography>
+                  <Button 
+                    variant="outlined" 
+                    onClick={handleOpenImport}
+                    startIcon={<RefreshCw />}
+                    sx={{ height: '100%' }}
+                  >
+                    Import from Project (MCP)
+                  </Button>
+              </Box>
           </Box>
         </Box>
 
@@ -225,7 +344,7 @@ export const KnowledgeManager: React.FC<KnowledgeManagerProps> = ({ isOpen, onCl
               fullWidth 
               onClick={handleBuildIndex} 
               disabled={isIndexing}
-              startIcon={isIndexing ? <RefreshCw className="animate-spin" /> : <Database />}
+              startIcon={isIndexing ? <CircularProgress size={20} color="inherit" /> : <Database />}
             >
               {isIndexing ? 'Building Index...' : 'Build & Save Index'}
             </Button>
@@ -267,5 +386,67 @@ export const KnowledgeManager: React.FC<KnowledgeManagerProps> = ({ isOpen, onCl
         <Button onClick={onClose}>Close</Button>
       </DialogActions>
     </Dialog>
+
+    {/* Import Dialog */}
+    <Dialog open={isImportDialogOpen} onClose={() => !isImporting && setIsImportDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            Import from Project
+            {projectFiles.length > 0 && (
+                <FormControlLabel
+                    control={
+                        <Checkbox 
+                            checked={selectedProjectFiles.length === projectFiles.length && projectFiles.length > 0}
+                            indeterminate={selectedProjectFiles.length > 0 && selectedProjectFiles.length < projectFiles.length}
+                            onChange={handleSelectAll}
+                            disabled={isImporting}
+                        />
+                    }
+                    label="Select All"
+                />
+            )}
+        </DialogTitle>
+        <DialogContent dividers>
+            {isLoadingFiles ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                    <CircularProgress />
+                </Box>
+            ) : (
+                <List dense sx={{ maxHeight: '400px', overflow: 'auto' }}>
+                    {projectFiles.length > 0 ? projectFiles.map((file) => (
+                        <ListItem 
+                            key={file} 
+                            secondaryAction={
+                                <Checkbox 
+                                    edge="end"
+                                    checked={selectedProjectFiles.includes(file)}
+                                    onChange={() => handleToggleFileSelection(file)}
+                                    disabled={isImporting}
+                                />
+                            }
+                            disablePadding
+                        >
+                            <ListItemText primary={file} />
+                        </ListItem>
+                    )) : (
+                        <Typography color="text.secondary" align="center" sx={{ py: 2 }}>
+                            No files found or 'git' server not connected.
+                        </Typography>
+                    )}
+                </List>
+            )}
+        </DialogContent>
+        <DialogActions>
+            <Button onClick={() => setIsImportDialogOpen(false)} disabled={isImporting}>Cancel</Button>
+            <Button 
+                onClick={handleImportSelected} 
+                variant="contained" 
+                disabled={selectedProjectFiles.length === 0 || isImporting}
+                startIcon={isImporting ? <CircularProgress size={20} color="inherit" /> : null}
+            >
+                {isImporting ? 'Importing...' : `Import (${selectedProjectFiles.length})`}
+            </Button>
+        </DialogActions>
+    </Dialog>
+    </>
   );
 };

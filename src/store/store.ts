@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { AgentConfig, ApiKeys, Message, ChatSession } from '@/types';
+import { AgentConfig, ApiKeys, Message, ChatSession, McpServer } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 import { createDefaultAgent, DEFAULT_ENABLED_MODELS } from '@/constants';
 
@@ -11,6 +11,8 @@ interface AppState {
   sessions: ChatSession[];
   currentSessionId: string | null;
   enabledModels: string[];
+  mcpServers: McpServer[];
+
   
   // Actions
   setApiKey: (provider: keyof ApiKeys, key: string) => void;
@@ -27,6 +29,12 @@ interface AppState {
   addMessage: (sessionId: string, message: Message) => void;
   updateMessage: (sessionId: string, messageId: string, updates: Partial<Message>) => void;
   setEnabledModels: (models: string[]) => void;
+
+  addMcpServer: (server: McpServer) => void;
+  removeMcpServer: (id: string) => void;
+  updateMcpServerStatus: (id: string, status: McpServer['status'], error?: string) => void;
+  updateMcpServerTools: (id: string, tools: any[]) => void;
+
   
   // Computed
   getCurrentAgent: () => AgentConfig | undefined;
@@ -41,7 +49,10 @@ export const useStore = create<AppState>()(
       currentAgentId: 'default',
       sessions: [],
       currentSessionId: null,
+
       enabledModels: DEFAULT_ENABLED_MODELS,
+      mcpServers: [],
+
 
       setApiKey: (provider, key) => 
         set((state) => ({ apiKeys: { ...state.apiKeys, [provider]: key } })),
@@ -115,6 +126,29 @@ export const useStore = create<AppState>()(
 
       setEnabledModels: (models) => set({ enabledModels: models }),
 
+      addMcpServer: (server) =>
+        set((state) => ({ mcpServers: [...state.mcpServers, server] })),
+
+      removeMcpServer: (id) =>
+        set((state) => ({
+          mcpServers: state.mcpServers.filter((s) => s.id !== id),
+        })),
+
+      updateMcpServerStatus: (id, status, error) =>
+        set((state) => ({
+          mcpServers: state.mcpServers.map((s) =>
+            s.id === id ? { ...s, status, error } : s
+          ),
+        })),
+
+      updateMcpServerTools: (id, tools) =>
+        set((state) => ({
+          mcpServers: state.mcpServers.map((s) =>
+            s.id === id ? { ...s, tools } : s
+          ),
+        })),
+
+
       getCurrentAgent: () => {
         const state = get();
         return state.agents.find((a) => a.id === state.currentAgentId);
@@ -133,7 +167,9 @@ export const useStore = create<AppState>()(
         sessions: state.sessions,
         currentAgentId: state.currentAgentId,
         currentSessionId: state.currentSessionId,
+
         enabledModels: state.enabledModels,
+        mcpServers: state.mcpServers,
       }),
       version: 2,
       migrate: (persistedState: any, version: number) => {

@@ -26,19 +26,19 @@ interface ChatAreaProps {
 }
 
 export const ChatArea = ({ onOpenAgentSettings }: ChatAreaProps) => {
-  const { 
-    currentAgentId, 
-    getCurrentAgent, 
-    sessions, 
-    currentSessionId, 
-    createSession, 
-    addMessage, 
+  const {
+    currentAgentId,
+    getCurrentAgent,
+    sessions,
+    currentSessionId,
+    createSession,
+    addMessage,
     apiKeys,
     clearSessionMessages,
     setCurrentSession,
     updateMessage
   } = useStore();
-  
+
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -65,24 +65,36 @@ export const ChatArea = ({ onOpenAgentSettings }: ChatAreaProps) => {
     if (!currentSessionId) {
       createSession(currentAgent.id);
     }
-    
-    // Need to get the fresh state after createSession
-    // Using a small timeout or just accessing store directly is safer in async flow if we want to be sure
-    // But since createSession is sync in Zustand, we can just re-read state or rely on the fact that we need the ID.
-    // Let's grab it from store state directly to be safe.
+
     const state = useStore.getState();
     const activeSessionId = state.currentSessionId;
 
     if (!activeSessionId) return;
 
+    // Day 20: /help command - detect BEFORE creating messages
+    const isHelpCommand = input.trim().toLowerCase() === '/help';
+    const helpPrompt = 'Расскажи о структуре проекта Legion, его архитектуре и стиле кода. Опиши основные компоненты, технологический стек и приведи примеры кода. Используй информацию из README.md и документации в папке docs/.';
+
+    // For /help, show the command in UI but send the expanded prompt to LLM
     const userMsg: Message = {
       id: crypto.randomUUID(),
       role: 'user',
-      content: input,
+      content: isHelpCommand ? '/help' : input,
       timestamp: Date.now(),
     };
 
     addMessage(activeSessionId, userMsg);
+
+    if (isHelpCommand) {
+      const helpSystemMsg: Message = {
+        id: crypto.randomUUID(),
+        role: 'system',
+        content: '📚 **/help** — Запрос информации о проекте из базы знаний...',
+        timestamp: Date.now(),
+      };
+      addMessage(activeSessionId, helpSystemMsg);
+    }
+
     setInput('');
     setIsLoading(true);
 
@@ -93,19 +105,37 @@ export const ChatArea = ({ onOpenAgentSettings }: ChatAreaProps) => {
       content: '',
       timestamp: Date.now(),
     };
-    
+
     addMessage(activeSessionId, assistantMsg);
-    
-    // Get fresh state to include the user message we just added
+
+    // Get fresh state
     const freshState = useStore.getState();
-    const currentMessages = freshState.sessions.find(s => s.id === activeSessionId)?.messages || [];
+    let currentMessages = freshState.sessions.find(s => s.id === activeSessionId)?.messages || [];
+
+    // For /help: replace user message content with expanded prompt for LLM
+    if (isHelpCommand) {
+      currentMessages = currentMessages.map(m =>
+        m.id === userMsg.id ? { ...m, content: helpPrompt } : m
+      );
+    }
+
+    // Filter out system messages (like /help indicator) for LLM context
+    currentMessages = currentMessages.filter(m =>
+      m.role !== 'system' || !m.content.startsWith('📚')
+    );
+
     let fullContent = '';
+
+    // For /help, force hybrid RAG mode
+    const agentConfig = isHelpCommand
+      ? { ...currentAgent, ragMode: 'hybrid' as const }
+      : currentAgent;
 
     try {
       const { content, metrics, sources } = await sendMessage(
         apiKeys,
         currentMessages,
-        currentAgent,
+        agentConfig,
         (chunk) => {
           fullContent += chunk;
           useStore.setState((state) => ({
@@ -146,7 +176,7 @@ export const ChatArea = ({ onOpenAgentSettings }: ChatAreaProps) => {
     if (!currentSessionId) {
       createSession(currentAgent.id);
     }
-    
+
     const state = useStore.getState();
     const activeSessionId = state.currentSessionId;
 
@@ -204,7 +234,7 @@ export const ChatArea = ({ onOpenAgentSettings }: ChatAreaProps) => {
       const hybridConfig = { ...currentAgent, ragMode: 'hybrid' as const };
       const noRagConfig = { ...currentAgent, ragMode: 'off' as const };
 
-      const createPromise = (config: AgentConfig, msgId: string) => 
+      const createPromise = (config: AgentConfig, msgId: string) =>
         sendMessage(
           apiKeys,
           contextMessages,
@@ -213,7 +243,7 @@ export const ChatArea = ({ onOpenAgentSettings }: ChatAreaProps) => {
             useStore.setState((state) => {
               const session = state.sessions.find(s => s.id === activeSessionId);
               if (!session) return state;
-              
+
               const msg = session.messages.find(m => m.id === msgId);
               if (!msg) return state;
 

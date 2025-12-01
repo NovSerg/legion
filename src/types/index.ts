@@ -85,3 +85,12 @@ export interface SearchResult {
   chunk: DocumentChunk;
   score: number;
 }
+
+export interface McpServer {
+  id: string;
+  name: string;
+  url: string;
+  status: 'connected' | 'disconnected' | 'connecting' | 'error';
+  error?: string;
+  tools?: any[];
+}

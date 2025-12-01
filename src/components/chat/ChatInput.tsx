@@ -22,7 +22,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider', bgcolor: 'background.default' }}>
       <TextField
         fullWidth
-        placeholder={`Сообщение для ${agentName}...`}
+        placeholder={`Сообщение... (введите /help для справки о проекте)`}
         value={input}
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={(e) => {

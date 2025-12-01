@@ -5,7 +5,7 @@ import { ChatArea } from '@/components/ChatArea';
 import { AgentSettings } from '@/components/AgentSettings';
 import { SettingsModal } from '@/components/SettingsModal';
 import { useStore } from '@/store/store';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Box } from '@mui/material';
 
 export default function Home() {
@@ -13,6 +13,14 @@ export default function Home() {
   const [showSettings, setShowSettings] = useState(false);
 
   const { currentAgentId } = useStore();
+
+  useEffect(() => {
+    // Reconnect to MCP servers on startup
+    import('@/services/mcp').then(({ mcpService }) => {
+      mcpService.syncConfig();
+    });
+  }, []);
+
 
   return (
     <Box sx={{ display: 'flex', height: '100vh', width: '100%', overflow: 'hidden', bgcolor: 'background.default', color: 'text.primary' }}>
