@@ -1,0 +1,181 @@
+{
+  "users": [
+    {
+      "id": "user-1",
+      "name": "Алексей Петров",
+      "email": "alexey.petrov@example.com",
+      "phone": "+7 (999) 123-45-67",
+      "plan": "Pro",
+      "registeredAt": "2024-01-15T10:00:00Z",
+      "lastActive": "2024-12-03T18:30:00Z",
+      "company": "ООО Технологии",
+      "role": "CTO"
+    },
+    {
+      "id": "user-2",
+      "name": "Мария Иванова",
+      "email": "maria.ivanova@example.com",
+      "phone": "+7 (999) 234-56-78",
+      "plan": "Free",
+      "registeredAt": "2024-06-20T14:20:00Z",
+      "lastActive": "2024-12-04T09:15:00Z",
+      "company": null,
+      "role": "Freelancer"
+    },
+    {
+      "id": "user-3",
+      "name": "Дмитрий Соколов",
+      "email": "dmitry.sokolov@example.com",
+      "phone": "+7 (999) 345-67-89",
+      "plan": "Enterprise",
+      "registeredAt": "2023-11-10T08:00:00Z",
+      "lastActive": "2024-12-03T20:45:00Z",
+      "company": "МегаКорп",
+      "role": "Team Lead"
+    },
+    {
+      "id": "user-4",
+      "name": "Елена Смирнова",
+      "email": "elena.smirnova@example.com",
+      "phone": "+7 (999) 456-78-90",
+      "plan": "Pro",
+      "registeredAt": "2024-03-05T11:30:00Z",
+      "lastActive": "2024-12-02T16:20:00Z",
+      "company": "Стартап Инновации",
+      "role": "Product Manager"
+    }
+  ],
+  "tickets": [
+    {
+      "id": "ticket-1",
+      "userId": "user-1",
+      "subject": "Не работает авторизация через Google",
+      "description": "При попытке войти через Google OAuth появляется ошибка 500. Пробовал несколько раз, результат тот же. Раньше всё работало нормально.",
+      "status": "open",
+      "priority": "high",
+      "category": "authentication",
+      "createdAt": "2024-12-03T10:30:00Z",
+      "updatedAt": "2024-12-03T10:30:00Z",
+      "assignedTo": null,
+      "tags": [
+        "oauth",
+        "google",
+        "error-500"
+      ]
+    },
+    {
+      "id": "ticket-2",
+      "userId": "user-1",
+      "subject": "Как экспортировать данные в CSV?",
+      "description": "Не могу найти кнопку экспорта данных в дашборде. Нужно выгрузить статистику за месяц.",
+      "status": "closed",
+      "priority": "low",
+      "category": "feature-question",
+      "createdAt": "2024-11-28T14:20:00Z",
+      "updatedAt": "2024-11-29T09:15:00Z",
+      "assignedTo": "support-agent-1",
+      "resolution": "Показали, что кнопка экспорта находится в меню Settings → Export → CSV. Пользователь успешно экспортировал данные.",
+      "tags": [
+        "export",
+        "csv",
+        "resolved"
+      ]
+    },
+    {
+      "id": "ticket-3",
+      "userId": "user-2",
+      "subject": "Вопрос по лимитам Free плана",
+      "description": "Хочу понять, сколько запросов доступно в бесплатном тарифе и что будет при превышении лимита?",
+      "status": "open",
+      "priority": "medium",
+      "category": "billing",
+      "createdAt": "2024-12-04T09:00:00Z",
+      "updatedAt": "2024-12-04T09:00:00Z",
+      "assignedTo": "support-agent-2",
+      "tags": [
+        "pricing",
+        "limits",
+        "free-plan"
+      ]
+    },
+    {
+      "id": "ticket-4",
+      "userId": "user-3",
+      "subject": "Проблема с производительностью API",
+      "description": "Последние несколько дней наблюдаем медленные ответы от API (timeout более 5 секунд). Это критично для нашего продакшена.",
+      "status": "in-progress",
+      "priority": "critical",
+      "category": "performance",
+      "createdAt": "2024-12-02T16:45:00Z",
+      "updatedAt": "2024-12-03T20:30:00Z",
+      "assignedTo": "tech-team",
+      "tags": [
+        "api",
+        "performance",
+        "timeout",
+        "enterprise"
+      ]
+    },
+    {
+      "id": "ticket-5",
+      "userId": "user-4",
+      "subject": "Не приходит email с подтверждением",
+      "description": "Зарегистрировала нового члена команды, но ему не пришло письмо с подтверждением. Проверили спам - там тоже нет.",
+      "status": "open",
+      "priority": "medium",
+      "category": "email",
+      "createdAt": "2024-12-02T11:15:00Z",
+      "updatedAt": "2024-12-02T11:15:00Z",
+      "assignedTo": null,
+      "tags": [
+        "email",
+        "confirmation",
+        "team-invite"
+      ]
+    },
+    {
+      "id": "ticket-6",
+      "userId": "user-2",
+      "subject": "Как апгрейдиться до Pro?",
+      "description": "Хочу перейти на платный тариф. Какие способы оплаты доступны? Есть ли скидка при годовой оплате?",
+      "status": "closed",
+      "priority": "low",
+      "category": "billing",
+      "createdAt": "2024-11-25T13:30:00Z",
+      "updatedAt": "2024-11-25T15:00:00Z",
+      "assignedTo": "support-agent-1",
+      "resolution": "Объяснили процесс апгрейда через Settings → Billing. Доступны карты и PayPal. При годовой оплате скидка 20%. Пользователь успешно перешёл на Pro.",
+      "tags": [
+        "upgrade",
+        "billing",
+        "resolved"
+      ]
+    },
+    {
+      "id": "ticket-7",
+      "userId": "user-2",
+      "subject": "Не понимаю, как использовать ResistorNode",
+      "description": "Пользователь не знает, как правильно использовать компонент ResistorNode в electro-lab. Нужна помощь с его функционалом и настройками.",
+      "status": "open",
+      "priority": "medium",
+      "category": "feature-question",
+      "createdAt": "2025-12-03T20:31:22.200Z",
+      "updatedAt": "2025-12-03T20:31:22.205Z",
+      "assignedTo": null,
+      "tags": []
+    },
+    {
+      "id": "ticket-8",
+      "userId": "user-2",
+      "subject": "Вопрос по использованию ResistorNode",
+      "description": "Здравствуйте! Я пытаюсь использовать компонент ResistorNode в проекте, но не совсем понимаю, как он работает и как его правильно настраивать. Можете, пожалуйста, предоставить инструкции или рекомендации по его использованию?",
+      "status": "open",
+      "priority": "medium",
+      "category": "feature-question",
+      "createdAt": "2025-12-03T20:37:35.492Z",
+      "updatedAt": "2025-12-03T20:37:35.492Z",
+      "assignedTo": null,
+      "tags": []
+    }
+  ]
+}
