@@ -1,0 +1,291 @@
+{
+  "tasks": [
+    {
+      "id": "task-1",
+      "title": "Добавить поддержку экспорта в PDF для отчётов",
+      "description": "Пользователи просят возможность экспортировать аналитические отчёты в PDF формат. Нужно добавить библиотеку для генерации PDF и кнопку экспорта в UI.",
+      "status": "todo",
+      "priority": "high",
+      "assignee": null,
+      "reporter": "Алексей Петров",
+      "createdAt": "2024-12-01T10:00:00Z",
+      "updatedAt": "2024-12-01T10:00:00Z",
+      "dueDate": "2024-12-10T23:59:59Z",
+      "tags": [
+        "feature",
+        "export",
+        "user-request"
+      ],
+      "dependencies": [],
+      "estimate": 8,
+      "timeSpent": 0
+    },
+    {
+      "id": "task-2",
+      "title": "Исправить баг с зависанием при загрузке больших файлов в RAG",
+      "description": "При загрузке файлов размером более 5MB в Knowledge Manager происходит зависание браузера. Нужно добавить chunked processing и показывать прогресс.",
+      "status": "in-progress",
+      "priority": "high",
+      "assignee": "Мария Иванова",
+      "reporter": "Дмитрий Соколов",
+      "createdAt": "2024-11-28T14:30:00Z",
+      "updatedAt": "2024-12-03T16:20:00Z",
+      "dueDate": "2024-12-05T23:59:59Z",
+      "tags": [
+        "bug",
+        "rag",
+        "performance"
+      ],
+      "dependencies": [],
+      "estimate": 5,
+      "timeSpent": 3
+    },
+    {
+      "id": "task-3",
+      "title": "Рефакторинг системы эмбеддингов",
+      "description": "Текущая реализация эмбеддингов использует устаревший подход. Нужно перейти на worker threads для параллельной обработки и оптимизировать использование памяти.",
+      "status": "review",
+      "priority": "medium",
+      "assignee": "Иван Смирнов",
+      "reporter": "Мария Иванова",
+      "createdAt": "2024-11-25T09:15:00Z",
+      "updatedAt": "2024-12-04T11:00:00Z",
+      "dueDate": "2024-12-08T23:59:59Z",
+      "tags": [
+        "refactoring",
+        "rag",
+        "tech-debt"
+      ],
+      "dependencies": [],
+      "estimate": 12,
+      "timeSpent": 10
+    },
+    {
+      "id": "task-4",
+      "title": "Добавить аутентификацию через OAuth2",
+      "description": "Реализовать возможность входа через Google и GitHub для упрощения регистрации пользователей.",
+      "status": "todo",
+      "priority": "medium",
+      "assignee": "Алексей Петров",
+      "reporter": "Product Owner",
+      "createdAt": "2024-11-30T12:00:00Z",
+      "updatedAt": "2024-11-30T12:00:00Z",
+      "dueDate": "2024-12-15T23:59:59Z",
+      "tags": [
+        "feature",
+        "auth",
+        "security"
+      ],
+      "dependencies": [
+        "task-7"
+      ],
+      "estimate": 16,
+      "timeSpent": 0
+    },
+    {
+      "id": "task-5",
+      "title": "Оптимизировать SQL запросы в API endpoints",
+      "description": "Некоторые API endpoints делают избыточные запросы к БД. Нужно добавить индексы и оптимизировать N+1 queries.",
+      "status": "todo",
+      "priority": "low",
+      "assignee": null,
+      "reporter": "Иван Смирнов",
+      "createdAt": "2024-11-27T15:45:00Z",
+      "updatedAt": "2024-11-27T15:45:00Z",
+      "tags": [
+        "performance",
+        "backend",
+        "tech-debt"
+      ],
+      "dependencies": [],
+      "estimate": 6,
+      "timeSpent": 0
+    },
+    {
+      "id": "task-6",
+      "title": "Интеграция с GitHub для импорта Issues",
+      "description": "Добавить возможность импортировать GitHub Issues в систему задач через MCP сервер.",
+      "status": "blocked",
+      "priority": "medium",
+      "assignee": "Дмитрий Соколов",
+      "reporter": "Алексей Петров",
+      "createdAt": "2024-12-02T08:00:00Z",
+      "updatedAt": "2024-12-04T10:30:00Z",
+      "dueDate": "2024-12-12T23:59:59Z",
+      "tags": [
+        "integration",
+        "github",
+        "mcp"
+      ],
+      "dependencies": [
+        "task-8"
+      ],
+      "estimate": 10,
+      "timeSpent": 2
+    },
+    {
+      "id": "task-7",
+      "title": "Создать базовую систему управления пользователями",
+      "description": "Добавить CRUD операции для пользователей, роли и права доступа.",
+      "status": "done",
+      "priority": "high",
+      "assignee": "Мария Иванова",
+      "reporter": "Product Owner",
+      "createdAt": "2024-11-20T10:00:00Z",
+      "updatedAt": "2024-11-29T18:00:00Z",
+      "tags": [
+        "feature",
+        "auth",
+        "backend"
+      ],
+      "dependencies": [],
+      "estimate": 20,
+      "timeSpent": 22
+    },
+    {
+      "id": "task-8",
+      "title": "Обновить MCP SDK до последней версии",
+      "description": "Новая версия MCP SDK содержит улучшения безопасности и поддержку новых возможностей.",
+      "status": "in-progress",
+      "priority": "medium",
+      "assignee": "Иван Смирнов",
+      "reporter": "Дмитрий Соколов",
+      "createdAt": "2024-12-01T13:00:00Z",
+      "updatedAt": "2024-12-04T09:15:00Z",
+      "dueDate": "2024-12-06T23:59:59Z",
+      "tags": [
+        "dependencies",
+        "mcp",
+        "security"
+      ],
+      "dependencies": [],
+      "estimate": 4,
+      "timeSpent": 2
+    },
+    {
+      "id": "task-9",
+      "title": "Написать unit тесты для RAG pipeline",
+      "description": "Покрыть тестами основные функции RAG системы: chunking, embedding, search.",
+      "status": "todo",
+      "priority": "low",
+      "assignee": null,
+      "reporter": "Мария Иванова",
+      "createdAt": "2024-11-29T11:00:00Z",
+      "updatedAt": "2024-11-29T11:00:00Z",
+      "tags": [
+        "testing",
+        "rag",
+        "quality"
+      ],
+      "dependencies": [
+        "task-3"
+      ],
+      "estimate": 8,
+      "timeSpent": 0
+    },
+    {
+      "id": "task-10",
+      "title": "КРИТИЧНО: Исправить уязвимость в API авторизации",
+      "description": "Обнаружена возможность обхода проверки токенов. Требуется срочное исправление.",
+      "status": "todo",
+      "priority": "critical",
+      "assignee": "Алексей Петров",
+      "reporter": "Security Team",
+      "createdAt": "2024-12-04T07:00:00Z",
+      "updatedAt": "2024-12-04T07:00:00Z",
+      "dueDate": "2024-12-05T12:00:00Z",
+      "tags": [
+        "security",
+        "bug",
+        "critical"
+      ],
+      "dependencies": [],
+      "estimate": 4,
+      "timeSpent": 0
+    },
+    {
+      "id": "task-11",
+      "title": "Добавить темную тему для всех компонентов",
+      "description": "Некоторые новые компоненты не поддерживают темную тему. Нужно привести к единому стилю.",
+      "status": "todo",
+      "priority": "low",
+      "assignee": "Дмитрий Соколов",
+      "reporter": "UX Designer",
+      "createdAt": "2024-12-03T14:00:00Z",
+      "updatedAt": "2024-12-03T14:00:00Z",
+      "tags": [
+        "ui",
+        "design",
+        "enhancement"
+      ],
+      "dependencies": [],
+      "estimate": 6,
+      "timeSpent": 0
+    },
+    {
+      "id": "task-12",
+      "title": "Настроить CI/CD pipeline",
+      "description": "Автоматизировать тестирование и деплой через GitHub Actions.",
+      "status": "in-progress",
+      "priority": "high",
+      "assignee": "Иван Смирнов",
+      "reporter": "DevOps",
+      "createdAt": "2024-11-26T10:00:00Z",
+      "updatedAt": "2024-12-04T15:00:00Z",
+      "dueDate": "2024-12-07T23:59:59Z",
+      "tags": [
+        "devops",
+        "automation",
+        "infrastructure"
+      ],
+      "dependencies": [],
+      "estimate": 10,
+      "timeSpent": 7
+    },
+    {
+      "id": "task-13",
+      "title": "Добавление поддержки темной темы",
+      "description": "Необходимо добавить поддержку темной темы для всех компонентов приложения. Это включает в себя изменение стилей и проверку совместимости.",
+      "status": "todo",
+      "priority": "medium",
+      "assignee": "Дмитрий Соколов",
+      "reporter": "AI Assistant",
+      "createdAt": "2025-12-04T18:34:02.574Z",
+      "updatedAt": "2025-12-04T18:34:02.575Z",
+      "dueDate": "2024-12-20",
+      "tags": [
+        "UI",
+        "темная тема"
+      ],
+      "dependencies": [],
+      "estimate": 8,
+      "timeSpent": 0
+    }
+  ],
+  "team": [
+    {
+      "id": "user-1",
+      "name": "Алексей Петров",
+      "role": "Senior Developer",
+      "capacity": 40
+    },
+    {
+      "id": "user-2",
+      "name": "Мария Иванова",
+      "role": "Full Stack Developer",
+      "capacity": 40
+    },
+    {
+      "id": "user-3",
+      "name": "Иван Смирнов",
+      "role": "Backend Developer",
+      "capacity": 40
+    },
+    {
+      "id": "user-4",
+      "name": "Дмитрий Соколов",
+      "role": "Frontend Developer",
+      "capacity": 40
+    }
+  ]
+}
