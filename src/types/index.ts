@@ -44,6 +44,7 @@ export interface AgentConfig {
 export interface ApiKeys {
   openRouter?: string;
   zai?: string;
+  lmStudioUrl?: string;
 }
 
 export interface ChatSession {

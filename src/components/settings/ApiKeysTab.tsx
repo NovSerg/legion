@@ -1,11 +1,14 @@
 import React from 'react';
-import { Box, TextField, Typography } from '@mui/material';
+import { Box, TextField } from '@mui/material';
+import { DEFAULT_LM_STUDIO_URL } from '@/constants';
 
 interface ApiKeysTabProps {
   openRouterKey: string;
   setOpenRouterKey: (key: string) => void;
   zaiKey: string;
   setZaiKey: (key: string) => void;
+  lmStudioUrl: string;
+  setLmStudioUrl: (url: string) => void;
 }
 
 export const ApiKeysTab: React.FC<ApiKeysTabProps> = ({
@@ -13,6 +16,8 @@ export const ApiKeysTab: React.FC<ApiKeysTabProps> = ({
   setOpenRouterKey,
   zaiKey,
   setZaiKey,
+  lmStudioUrl,
+  setLmStudioUrl,
 }) => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -35,6 +40,14 @@ export const ApiKeysTab: React.FC<ApiKeysTabProps> = ({
         onChange={(e) => setZaiKey(e.target.value)}
         placeholder="zai-..."
         helperText="Требуется для моделей GLM"
+      />
+      <TextField
+        label="URL LM Studio"
+        fullWidth
+        value={lmStudioUrl}
+        onChange={(e) => setLmStudioUrl(e.target.value)}
+        placeholder={DEFAULT_LM_STUDIO_URL}
+        helperText="Адрес локального сервера LM Studio (по умолчанию: http://localhost:1234/v1)"
       />
     </Box>
   );

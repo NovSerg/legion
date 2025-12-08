@@ -260,6 +260,22 @@
       "dependencies": [],
       "estimate": 8,
       "timeSpent": 0
+    },
+    {
+      "id": "task-14",
+      "title": "Добавить поддержку темной темы",
+      "description": "Разработать и внедрить поддержку темной темы для приложения, чтобы улучшить пользовательский опыт и соответствовать современным стандартам дизайна.",
+      "status": "todo",
+      "priority": "medium",
+      "assignee": "Дмитрий Соколов",
+      "reporter": "AI Assistant",
+      "createdAt": "2025-12-04T19:42:16.792Z",
+      "updatedAt": "2025-12-04T19:42:16.793Z",
+      "dueDate": null,
+      "tags": [],
+      "dependencies": [],
+      "estimate": null,
+      "timeSpent": 0
     }
   ],
   "team": [

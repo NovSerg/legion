@@ -1,7 +1,10 @@
 import { AgentConfig, Message } from '@/types';
 import { loadIndex, search } from './rag/store';
 
-export const getProviderForModel = (model: string): { provider: 'zai' | 'openRouter', baseUrl: string } => {
+export const getProviderForModel = (model: string): { provider: 'zai' | 'openRouter' | 'lmStudio', baseUrl: string } => {
+  if (model.startsWith('local/')) {
+    return { provider: 'lmStudio', baseUrl: '' }; // URL передаётся отдельно из настроек
+  }
   if (model.startsWith('glm')) {
     return { provider: 'zai', baseUrl: 'https://api.z.ai/api/coding/paas/v4' };
   }
@@ -11,17 +14,29 @@ export const getProviderForModel = (model: string): { provider: 'zai' | 'openRou
 import { mcpService } from './mcp';
 
 export const sendMessage = async (
-  apiKeys: { zai?: string; openRouter?: string },
+  apiKeys: { zai?: string; openRouter?: string; lmStudioUrl?: string },
   messages: Message[],
   agentConfig: AgentConfig,
   onChunk: (chunk: string) => void
 ): Promise<{ content: string; metrics?: Message['metrics']; sources?: Message['sources'] }> => {
   const startTime = Date.now();
-  const { provider, baseUrl } = getProviderForModel(agentConfig.model);
-  const apiKey = apiKeys[provider];
-
-  if (!apiKey) {
-    throw new Error(`${provider === 'zai' ? 'ZAI' : 'OpenRouter'} API Key not found. Please configure it in settings.`);
+  const { provider, baseUrl: defaultBaseUrl } = getProviderForModel(agentConfig.model);
+  
+  // Для LM Studio используем URL из настроек, для остальных — дефолтный baseUrl
+  let finalBaseUrl = defaultBaseUrl;
+  let apiKey = '';
+  let modelName = agentConfig.model;
+  
+  if (provider === 'lmStudio') {
+    // Используем proxy для обхода CORS
+    finalBaseUrl = '/api/lm-studio';
+    apiKey = 'no-key'; // LM Studio не требует ключа
+    modelName = agentConfig.model.replace('local/', ''); // Убираем префикс
+  } else {
+    apiKey = (provider === 'zai' ? apiKeys.zai : apiKeys.openRouter) || '';
+    if (!apiKey) {
+      throw new Error(`${provider === 'zai' ? 'ZAI' : 'OpenRouter'} API Key not found. Please configure it in settings.`);
+    }
   }
 
   let currentMessages = [...messages];
@@ -137,7 +152,10 @@ export const sendMessage = async (
     ];
 
     try {
-      const response = await fetch(`${baseUrl}/chat/completions`, {
+      // Для LM Studio proxy уже содержит /chat/completions в route, для остальных добавляем
+      const fetchUrl = provider === 'lmStudio' ? finalBaseUrl : `${finalBaseUrl}/chat/completions`;
+      
+      const response = await fetch(fetchUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -145,10 +163,13 @@ export const sendMessage = async (
           ...(provider === 'openRouter' ? {
             'HTTP-Referer': 'https://github.com/legion-ai',
             'X-Title': 'Legion AI',
+          } : {}),
+          ...(provider === 'lmStudio' ? {
+            'x-lm-studio-url': apiKeys.lmStudioUrl || 'http://localhost:1234/v1',
           } : {})
         },
         body: JSON.stringify({
-          model: agentConfig.model,
+          model: modelName,
           messages: apiMessages,
           stream: true,
           temperature: agentConfig.temperature,

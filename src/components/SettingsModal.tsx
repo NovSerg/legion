@@ -18,12 +18,12 @@ import {
   Close as CloseIcon, 
   Key as KeyIcon, 
   Dns as DnsIcon,
-  Search as SearchIcon,
-  Refresh as RefreshIcon
+  Computer as ComputerIcon,
 } from '@mui/icons-material';
 import { ApiKeysTab } from './settings/ApiKeysTab';
 import { OpenRouterModelsTab } from './settings/OpenRouterModelsTab';
 import { ZaiModelsTab } from './settings/ZaiModelsTab';
+import { LocalModelsTab } from './settings/LocalModelsTab';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -64,6 +64,7 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
   // API Keys State
   const [openRouterKey, setOpenRouterKey] = useState('');
   const [zaiKey, setZaiKey] = useState('');
+  const [lmStudioUrl, setLmStudioUrl] = useState('');
 
   // Models State
   const [allModels, setAllModels] = useState<any[]>([]);
@@ -75,6 +76,7 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
     if (isOpen) {
       setOpenRouterKey(apiKeys.openRouter || '');
       setZaiKey(apiKeys.zai || '');
+      setLmStudioUrl(apiKeys.lmStudioUrl || '');
       setSelectedModels(enabledModels);
     }
   }, [apiKeys, isOpen, enabledModels]);
@@ -97,6 +99,7 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
   const handleSave = () => {
     setApiKey('openRouter', openRouterKey);
     setApiKey('zai', zaiKey);
+    setApiKey('lmStudioUrl', lmStudioUrl);
     setEnabledModels(selectedModels);
     onClose();
   };
@@ -116,10 +119,11 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
       </DialogTitle>
       
       <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}>
-        <Tabs value={tabValue} onChange={(_, val) => setTabValue(val)}>
+        <Tabs value={tabValue} onChange={(_, val) => setTabValue(val)} variant="scrollable" scrollButtons="auto">
           <Tab icon={<KeyIcon />} iconPosition="start" label="API Ключи" />
-          <Tab icon={<DnsIcon />} iconPosition="start" label="Модели OpenRouter" />
-          <Tab icon={<DnsIcon />} iconPosition="start" label="Модели ZAI" />
+          <Tab icon={<DnsIcon />} iconPosition="start" label="OpenRouter" />
+          <Tab icon={<DnsIcon />} iconPosition="start" label="ZAI" />
+          <Tab icon={<ComputerIcon />} iconPosition="start" label="Локальные" />
         </Tabs>
       </Box>
 
@@ -130,6 +134,8 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
             setOpenRouterKey={setOpenRouterKey}
             zaiKey={zaiKey}
             setZaiKey={setZaiKey}
+            lmStudioUrl={lmStudioUrl}
+            setLmStudioUrl={setLmStudioUrl}
           />
         </CustomTabPanel>
 
@@ -150,6 +156,14 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
           <ZaiModelsTab
             selectedModels={selectedModels}
             handleToggleModel={handleToggleModel}
+          />
+        </CustomTabPanel>
+
+        <CustomTabPanel value={tabValue} index={3}>
+          <LocalModelsTab
+            selectedModels={selectedModels}
+            handleToggleModel={handleToggleModel}
+            lmStudioUrl={lmStudioUrl}
           />
         </CustomTabPanel>
       </DialogContent>

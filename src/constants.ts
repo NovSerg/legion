@@ -1,6 +1,8 @@
 import { AgentConfig } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 
+export const DEFAULT_LM_STUDIO_URL = 'http://localhost:1234/v1';
+
 export const ZAI_MODELS = [
   { id: 'glm-4.6', name: 'GLM-4.6' },
   { id: 'glm-4.5', name: 'GLM-4.5' },
