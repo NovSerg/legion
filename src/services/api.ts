@@ -1,9 +1,12 @@
 import { AgentConfig, Message } from '@/types';
 import { loadIndex, search } from './rag/store';
 
-export const getProviderForModel = (model: string): { provider: 'zai' | 'openRouter' | 'lmStudio', baseUrl: string } => {
+export const getProviderForModel = (model: string): { provider: 'zai' | 'openRouter' | 'lmStudio' | 'ollama', baseUrl: string } => {
   if (model.startsWith('local/')) {
     return { provider: 'lmStudio', baseUrl: '' }; // URL передаётся отдельно из настроек
+  }
+  if (model.startsWith('ollama/')) {
+    return { provider: 'ollama', baseUrl: '' }; // URL передаётся отдельно из настроек
   }
   if (model.startsWith('glm')) {
     return { provider: 'zai', baseUrl: 'https://api.z.ai/api/coding/paas/v4' };
@@ -14,7 +17,7 @@ export const getProviderForModel = (model: string): { provider: 'zai' | 'openRou
 import { mcpService } from './mcp';
 
 export const sendMessage = async (
-  apiKeys: { zai?: string; openRouter?: string; lmStudioUrl?: string },
+  apiKeys: { zai?: string; openRouter?: string; lmStudioUrl?: string; ollamaUrl?: string },
   messages: Message[],
   agentConfig: AgentConfig,
   onChunk: (chunk: string) => void
@@ -32,6 +35,11 @@ export const sendMessage = async (
     finalBaseUrl = '/api/lm-studio';
     apiKey = 'no-key'; // LM Studio не требует ключа
     modelName = agentConfig.model.replace('local/', ''); // Убираем префикс
+  } else if (provider === 'ollama') {
+    // Используем proxy для Ollama
+    finalBaseUrl = '/api/ollama';
+    apiKey = 'no-key'; // Ollama не требует ключа
+    modelName = agentConfig.model.replace('ollama/', ''); // Убираем префикс
   } else {
     apiKey = (provider === 'zai' ? apiKeys.zai : apiKeys.openRouter) || '';
     if (!apiKey) {
@@ -152,8 +160,8 @@ export const sendMessage = async (
     ];
 
     try {
-      // Для LM Studio proxy уже содержит /chat/completions в route, для остальных добавляем
-      const fetchUrl = provider === 'lmStudio' ? finalBaseUrl : `${finalBaseUrl}/chat/completions`;
+      // Для LM Studio и Ollama proxy уже содержит endpoint в route, для остальных добавляем
+      const fetchUrl = (provider === 'lmStudio' || provider === 'ollama') ? finalBaseUrl : `${finalBaseUrl}/chat/completions`;
       
       const response = await fetch(fetchUrl, {
         method: 'POST',
@@ -166,6 +174,9 @@ export const sendMessage = async (
           } : {}),
           ...(provider === 'lmStudio' ? {
             'x-lm-studio-url': apiKeys.lmStudioUrl || 'http://localhost:1234/v1',
+          } : {}),
+          ...(provider === 'ollama' ? {
+            'x-ollama-url': apiKeys.ollamaUrl || 'https://api.novsergdev.org',
           } : {})
         },
         body: JSON.stringify({
@@ -215,7 +226,28 @@ export const sendMessage = async (
           const trimmedLine = line.trim();
           if (!trimmedLine) continue;
           
-          if (trimmedLine.startsWith('data: ')) {
+          // Ollama использует NDJSON (каждая строка - JSON объект)
+          if (provider === 'ollama') {
+            try {
+              const parsed = JSON.parse(trimmedLine);
+              const content = parsed.message?.content || '';
+              if (content) {
+                currentTurnContent += content;
+                finalContent += content;
+                onChunk(content);
+              }
+              // Ollama возвращает done: true когда завершен
+              if (parsed.done && parsed.eval_count) {
+                usage = {
+                  prompt_tokens: parsed.prompt_eval_count || 0,
+                  completion_tokens: parsed.eval_count || 0,
+                  total_tokens: (parsed.prompt_eval_count || 0) + (parsed.eval_count || 0),
+                };
+              }
+            } catch (e) {
+              console.error('Error parsing Ollama chunk', e);
+            }
+          } else if (trimmedLine.startsWith('data: ')) {
             const data = trimmedLine.slice(6);
             if (data === '[DONE]') continue;
 

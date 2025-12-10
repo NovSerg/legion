@@ -45,6 +45,7 @@ export interface ApiKeys {
   openRouter?: string;
   zai?: string;
   lmStudioUrl?: string;
+  ollamaUrl?: string;
 }
 
 export interface ChatSession {

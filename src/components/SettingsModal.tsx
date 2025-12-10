@@ -19,11 +19,13 @@ import {
   Key as KeyIcon, 
   Dns as DnsIcon,
   Computer as ComputerIcon,
+  Cloud as CloudIcon,
 } from '@mui/icons-material';
 import { ApiKeysTab } from './settings/ApiKeysTab';
 import { OpenRouterModelsTab } from './settings/OpenRouterModelsTab';
 import { ZaiModelsTab } from './settings/ZaiModelsTab';
 import { LocalModelsTab } from './settings/LocalModelsTab';
+import { OllamaModelsTab } from './settings/OllamaModelsTab';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -65,6 +67,7 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
   const [openRouterKey, setOpenRouterKey] = useState('');
   const [zaiKey, setZaiKey] = useState('');
   const [lmStudioUrl, setLmStudioUrl] = useState('');
+  const [ollamaUrl, setOllamaUrl] = useState('');
 
   // Models State
   const [allModels, setAllModels] = useState<any[]>([]);
@@ -77,6 +80,7 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
       setOpenRouterKey(apiKeys.openRouter || '');
       setZaiKey(apiKeys.zai || '');
       setLmStudioUrl(apiKeys.lmStudioUrl || '');
+      setOllamaUrl(apiKeys.ollamaUrl || '');
       setSelectedModels(enabledModels);
     }
   }, [apiKeys, isOpen, enabledModels]);
@@ -100,6 +104,7 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
     setApiKey('openRouter', openRouterKey);
     setApiKey('zai', zaiKey);
     setApiKey('lmStudioUrl', lmStudioUrl);
+    setApiKey('ollamaUrl', ollamaUrl);
     setEnabledModels(selectedModels);
     onClose();
   };
@@ -124,6 +129,7 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
           <Tab icon={<DnsIcon />} iconPosition="start" label="OpenRouter" />
           <Tab icon={<DnsIcon />} iconPosition="start" label="ZAI" />
           <Tab icon={<ComputerIcon />} iconPosition="start" label="Локальные" />
+          <Tab icon={<CloudIcon />} iconPosition="start" label="Ollama" />
         </Tabs>
       </Box>
 
@@ -136,6 +142,8 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
             setZaiKey={setZaiKey}
             lmStudioUrl={lmStudioUrl}
             setLmStudioUrl={setLmStudioUrl}
+            ollamaUrl={ollamaUrl}
+            setOllamaUrl={setOllamaUrl}
           />
         </CustomTabPanel>
 
@@ -164,6 +172,14 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
             selectedModels={selectedModels}
             handleToggleModel={handleToggleModel}
             lmStudioUrl={lmStudioUrl}
+          />
+        </CustomTabPanel>
+
+        <CustomTabPanel value={tabValue} index={4}>
+          <OllamaModelsTab
+            selectedModels={selectedModels}
+            handleToggleModel={handleToggleModel}
+            ollamaUrl={ollamaUrl}
           />
         </CustomTabPanel>
       </DialogContent>

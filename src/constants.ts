@@ -2,6 +2,7 @@ import { AgentConfig } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 
 export const DEFAULT_LM_STUDIO_URL = 'http://localhost:1234/v1';
+export const DEFAULT_OLLAMA_URL = 'https://api.novsergdev.org';
 
 export const ZAI_MODELS = [
   { id: 'glm-4.6', name: 'GLM-4.6' },
