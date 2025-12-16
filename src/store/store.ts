@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { AgentConfig, ApiKeys, Message, ChatSession, McpServer } from '@/types';
+import { AgentConfig, ApiKeys, Message, ChatSession, McpServer, UserProfile } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 import { createDefaultAgent, DEFAULT_ENABLED_MODELS } from '@/constants';
 
@@ -12,6 +12,7 @@ interface AppState {
   currentSessionId: string | null;
   enabledModels: string[];
   mcpServers: McpServer[];
+  userProfile: UserProfile;
 
   
   // Actions
@@ -34,6 +35,7 @@ interface AppState {
   removeMcpServer: (id: string) => void;
   updateMcpServerStatus: (id: string, status: McpServer['status'], error?: string) => void;
   updateMcpServerTools: (id: string, tools: any[]) => void;
+  setUserProfile: (profile: UserProfile) => void;
 
   
   // Computed
@@ -52,6 +54,7 @@ export const useStore = create<AppState>()(
 
       enabledModels: DEFAULT_ENABLED_MODELS,
       mcpServers: [],
+      userProfile: { enabled: false },
 
 
       setApiKey: (provider, key) => 
@@ -141,6 +144,8 @@ export const useStore = create<AppState>()(
           ),
         })),
 
+      setUserProfile: (profile) => set({ userProfile: profile }),
+
       updateMcpServerTools: (id, tools) =>
         set((state) => ({
           mcpServers: state.mcpServers.map((s) =>
@@ -170,6 +175,7 @@ export const useStore = create<AppState>()(
 
         enabledModels: state.enabledModels,
         mcpServers: state.mcpServers,
+        userProfile: state.userProfile,
       }),
       version: 2,
       migrate: (persistedState: any, version: number) => {

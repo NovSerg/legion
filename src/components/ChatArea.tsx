@@ -36,7 +36,8 @@ export const ChatArea = ({ onOpenAgentSettings }: ChatAreaProps) => {
     apiKeys,
     clearSessionMessages,
     setCurrentSession,
-    updateMessage
+    updateMessage,
+    userProfile
   } = useStore();
 
   const [input, setInput] = useState('');
@@ -150,7 +151,8 @@ export const ChatArea = ({ onOpenAgentSettings }: ChatAreaProps) => {
                 : s
             ),
           }));
-        }
+        },
+        userProfile
       );
 
       // Update message with final metrics and sources
@@ -260,7 +262,8 @@ export const ChatArea = ({ onOpenAgentSettings }: ChatAreaProps) => {
                 ),
               };
             });
-          }
+          },
+          userProfile
         );
 
       const [strictRes, hybridRes, noRagRes] = await Promise.all([

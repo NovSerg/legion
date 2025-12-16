@@ -39,6 +39,7 @@ export interface AgentConfig {
   ragMode?: 'off' | 'hybrid' | 'strict';
   ragThreshold?: number;
   ragRerank?: boolean;
+  mcpServers?: string[]; // List of MCP server IDs this agent can use
 }
 
 export interface ApiKeys {
@@ -95,4 +96,12 @@ export interface McpServer {
   status: 'connected' | 'disconnected' | 'connecting' | 'error';
   error?: string;
   tools?: any[];
+}
+
+export interface UserProfile {
+  name?: string;
+  role?: string;
+  preferences?: string;
+  context?: string;
+  enabled: boolean;
 }

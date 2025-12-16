@@ -20,7 +20,7 @@ export const terminateWorker = () => {
   }
 };
 
-export const chunkText = (text: string, size: number = 1500, overlap: number = 200): { content: string; lineStart: number; lineEnd: number }[] => {
+export const chunkText = (text: string, size: number = 500, overlap: number = 50): { content: string; lineStart: number; lineEnd: number }[] => {
   const chunks: { content: string; lineStart: number; lineEnd: number }[] = [];
   let start = 0;
 

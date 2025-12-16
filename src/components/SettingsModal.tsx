@@ -20,12 +20,15 @@ import {
   Dns as DnsIcon,
   Computer as ComputerIcon,
   Cloud as CloudIcon,
+  Person as PersonIcon,
 } from '@mui/icons-material';
 import { ApiKeysTab } from './settings/ApiKeysTab';
 import { OpenRouterModelsTab } from './settings/OpenRouterModelsTab';
 import { ZaiModelsTab } from './settings/ZaiModelsTab';
 import { LocalModelsTab } from './settings/LocalModelsTab';
 import { OllamaModelsTab } from './settings/OllamaModelsTab';
+import { UserProfileTab } from './settings/UserProfileTab';
+import { UserProfile } from '@/types';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -60,7 +63,7 @@ function CustomTabPanel(props: TabPanelProps) {
 }
 
 export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
-  const { apiKeys, setApiKey, enabledModels, setEnabledModels } = useStore();
+  const { apiKeys, setApiKey, enabledModels, setEnabledModels, userProfile, setUserProfile } = useStore();
   const [tabValue, setTabValue] = useState(0);
   
   // API Keys State
@@ -75,6 +78,9 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
   const [loadingModels, setLoadingModels] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // User Profile State
+  const [localUserProfile, setLocalUserProfile] = useState<UserProfile>({ enabled: false });
+
   useEffect(() => {
     if (isOpen) {
       setOpenRouterKey(apiKeys.openRouter || '');
@@ -82,8 +88,9 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
       setLmStudioUrl(apiKeys.lmStudioUrl || '');
       setOllamaUrl(apiKeys.ollamaUrl || '');
       setSelectedModels(enabledModels);
+      setLocalUserProfile(userProfile);
     }
-  }, [apiKeys, isOpen, enabledModels]);
+  }, [apiKeys, isOpen, enabledModels, userProfile]);
 
   const handleFetchModels = async () => {
     setLoadingModels(true);
@@ -106,6 +113,7 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
     setApiKey('lmStudioUrl', lmStudioUrl);
     setApiKey('ollamaUrl', ollamaUrl);
     setEnabledModels(selectedModels);
+    setUserProfile(localUserProfile);
     onClose();
   };
 
@@ -130,6 +138,7 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
           <Tab icon={<DnsIcon />} iconPosition="start" label="ZAI" />
           <Tab icon={<ComputerIcon />} iconPosition="start" label="Локальные" />
           <Tab icon={<CloudIcon />} iconPosition="start" label="Ollama" />
+          <Tab icon={<PersonIcon />} iconPosition="start" label="Профиль" />
         </Tabs>
       </Box>
 
@@ -180,6 +189,13 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
             selectedModels={selectedModels}
             handleToggleModel={handleToggleModel}
             ollamaUrl={ollamaUrl}
+          />
+        </CustomTabPanel>
+
+        <CustomTabPanel value={tabValue} index={5}>
+          <UserProfileTab
+            profile={localUserProfile}
+            onChange={setLocalUserProfile}
           />
         </CustomTabPanel>
       </DialogContent>

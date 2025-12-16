@@ -1,4 +1,4 @@
-import { AgentConfig, Message } from '@/types';
+import { AgentConfig, Message, UserProfile } from '@/types';
 import { loadIndex, search } from './rag/store';
 
 export const getProviderForModel = (model: string): { provider: 'zai' | 'openRouter' | 'lmStudio' | 'ollama', baseUrl: string } => {
@@ -20,7 +20,8 @@ export const sendMessage = async (
   apiKeys: { zai?: string; openRouter?: string; lmStudioUrl?: string; ollamaUrl?: string },
   messages: Message[],
   agentConfig: AgentConfig,
-  onChunk: (chunk: string) => void
+  onChunk: (chunk: string) => void,
+  userProfile?: UserProfile
 ): Promise<{ content: string; metrics?: Message['metrics']; sources?: Message['sources'] }> => {
   const startTime = Date.now();
   const { provider, baseUrl: defaultBaseUrl } = getProviderForModel(agentConfig.model);
@@ -58,8 +59,14 @@ export const sendMessage = async (
   const MAX_TURNS = 5;
   let turnCount = 0;
 
-  // Get available tools
-  const tools = await mcpService.getTools();
+  // Get available tools (filtered by agent's mcpServers if configured)
+  let tools = await mcpService.getTools();
+  
+  // Filter tools by agent's allowed MCP servers
+  if (agentConfig.mcpServers && agentConfig.mcpServers.length > 0) {
+    tools = tools.filter(t => agentConfig.mcpServers!.includes(t.serverId));
+  }
+  
   const toolsPayload = tools.length > 0 ? tools.map(t => ({
     type: 'function',
     function: {
@@ -73,6 +80,28 @@ export const sendMessage = async (
     turnCount++;
     
     let systemContent = agentConfig.systemPrompt;
+
+    // Inject user profile if enabled
+    if (userProfile?.enabled) {
+      const profileParts: string[] = [];
+      
+      if (userProfile.name) {
+        profileParts.push(`Имя пользователя: ${userProfile.name}`);
+      }
+      if (userProfile.role) {
+        profileParts.push(`Роль/Профессия: ${userProfile.role}`);
+      }
+      if (userProfile.preferences) {
+        profileParts.push(`Предпочтения в общении:\n${userProfile.preferences}`);
+      }
+      if (userProfile.context) {
+        profileParts.push(`Дополнительный контекст:\n${userProfile.context}`);
+      }
+      
+      if (profileParts.length > 0) {
+        systemContent = `${systemContent}\n\n--- ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ ---\n${profileParts.join('\n\n')}`;
+      }
+    }
     let sources: Message['sources'] = undefined;
 
     // RAG Integration (only for the first turn or if we want to persist context)
@@ -236,6 +265,24 @@ export const sendMessage = async (
                 finalContent += content;
                 onChunk(content);
               }
+              
+              // Handle tool calls for Ollama
+              if (parsed.message?.tool_calls) {
+                for (const toolCall of parsed.message.tool_calls) {
+                  const index = toolCalls.length;
+                  toolCalls.push({
+                    id: toolCall.id || `call_${Date.now()}_${index}`,
+                    type: 'function',
+                    function: {
+                      name: toolCall.function?.name || '',
+                      arguments: typeof toolCall.function?.arguments === 'string' 
+                        ? toolCall.function.arguments 
+                        : JSON.stringify(toolCall.function?.arguments || {})
+                    }
+                  });
+                }
+              }
+              
               // Ollama возвращает done: true когда завершен
               if (parsed.done && parsed.eval_count) {
                 usage = {
@@ -258,7 +305,12 @@ export const sendMessage = async (
                 usage = parsed.usage;
               }
 
-              const delta = parsed.choices[0]?.delta;
+              // Safe check for choices array
+              if (!parsed.choices || !parsed.choices[0]) {
+                continue;
+              }
+
+              const delta = parsed.choices[0].delta;
               
               // Handle content
               const content = delta?.content || delta?.reasoning_content || '';

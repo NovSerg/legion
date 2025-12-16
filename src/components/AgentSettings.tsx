@@ -21,7 +21,9 @@ import {
   Switch,
   FormControlLabel,
   Tabs,
-  Tab
+  Tab,
+  Chip,
+  Checkbox
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import Editor from 'react-simple-code-editor';
@@ -65,7 +67,7 @@ interface AgentSettingsProps {
 }
 
 export const AgentSettings = ({ isOpen, onClose, agentId }: AgentSettingsProps) => {
-  const { agents, updateAgent, enabledModels } = useStore();
+  const { agents, updateAgent, enabledModels, mcpServers } = useStore();
   const agent = agents.find((a) => a.id === agentId);
   
   const [formData, setFormData] = useState<Partial<AgentConfig>>({});
@@ -171,7 +173,7 @@ export const AgentSettings = ({ isOpen, onClose, agentId }: AgentSettingsProps) 
                   value={formData.ragThreshold ?? 0.1}
                   min={0}
                   max={1}
-                  step={0.05}
+                  step={0.01}
                   onChange={(_, value) => handleChange('ragThreshold', value as number)}
                   valueLabelDisplay="auto"
                 />
@@ -195,6 +197,40 @@ export const AgentSettings = ({ isOpen, onClose, agentId }: AgentSettingsProps) 
               </Typography>
             </Box>
           )}
+
+          <FormControl fullWidth sx={{ mt: 3 }}>
+            <Typography variant="subtitle2" gutterBottom>MCP Серверы для агента</Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+              Выберите MCP серверы, которые может использовать этот агент. Если ничего не выбрано — доступны все.
+            </Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+              {mcpServers.filter(s => s.status === 'connected').map((server) => {
+                const isSelected = formData.mcpServers?.includes(server.id) || false;
+                return (
+                  <Chip
+                    key={server.id}
+                    label={server.name}
+                    onClick={() => {
+                      const current = formData.mcpServers || [];
+                      if (isSelected) {
+                        handleChange('mcpServers', current.filter(id => id !== server.id));
+                      } else {
+                        handleChange('mcpServers', [...current, server.id]);
+                      }
+                    }}
+                    color={isSelected ? 'primary' : 'default'}
+                    variant={isSelected ? 'filled' : 'outlined'}
+                    sx={{ cursor: 'pointer' }}
+                  />
+                );
+              })}
+              {mcpServers.filter(s => s.status === 'connected').length === 0 && (
+                <Typography variant="body2" color="text.secondary">
+                  Нет подключённых MCP серверов
+                </Typography>
+              )}
+            </Box>
+          </FormControl>
 
           <TextField
             label="Системный промпт"

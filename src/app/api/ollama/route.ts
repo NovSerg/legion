@@ -1,17 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 const DEFAULT_OLLAMA_URL = 'https://api.novsergdev.org';
 
 export async function GET(request: NextRequest) {
+  console.log('[Ollama API] Route handler started');
   const ollamaUrl = request.headers.get('x-ollama-url') || DEFAULT_OLLAMA_URL;
+  console.log('[Ollama API] Fetching from:', `${ollamaUrl}/api/tags`);
+  
+  // Add timeout to prevent hanging
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
   
   try {
+    console.log('[Ollama API] Starting fetch...');
     // Ollama использует /api/tags для получения списка моделей
     const response = await fetch(`${ollamaUrl}/api/tags`, {
       headers: {
         'Content-Type': 'application/json',
       },
+      signal: controller.signal,
+      cache: 'no-store',
     });
+    console.log('[Ollama API] Fetch completed, status:', response.status);
+    
+    clearTimeout(timeoutId);
     
     if (!response.ok) {
       return NextResponse.json(
@@ -23,7 +37,16 @@ export async function GET(request: NextRequest) {
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error: any) {
+    clearTimeout(timeoutId);
     console.error('Ollama proxy error:', error);
+    
+    if (error.name === 'AbortError') {
+      return NextResponse.json(
+        { error: 'Connection timeout - server did not respond in 10 seconds' },
+        { status: 504 }
+      );
+    }
+    
     return NextResponse.json(
       { error: error.message || 'Failed to connect to Ollama' },
       { status: 502 }
