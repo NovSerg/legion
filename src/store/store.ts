@@ -13,6 +13,7 @@ interface AppState {
   enabledModels: string[];
   mcpServers: McpServer[];
   userProfile: UserProfile;
+  currentView: 'chat' | 'dashboard';
 
   
   // Actions
@@ -36,6 +37,7 @@ interface AppState {
   updateMcpServerStatus: (id: string, status: McpServer['status'], error?: string) => void;
   updateMcpServerTools: (id: string, tools: any[]) => void;
   setUserProfile: (profile: UserProfile) => void;
+  setCurrentView: (view: 'chat' | 'dashboard') => void;
 
   
   // Computed
@@ -55,6 +57,7 @@ export const useStore = create<AppState>()(
       enabledModels: DEFAULT_ENABLED_MODELS,
       mcpServers: [],
       userProfile: { enabled: false },
+      currentView: 'dashboard',
 
 
       setApiKey: (provider, key) => 
@@ -152,6 +155,8 @@ export const useStore = create<AppState>()(
             s.id === id ? { ...s, tools } : s
           ),
         })),
+
+      setCurrentView: (view) => set({ currentView: view }),
 
 
       getCurrentAgent: () => {

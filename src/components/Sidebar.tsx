@@ -25,7 +25,8 @@ import {
   Chat as ChatIcon,
   SmartToy as BotIcon,
   Delete as DeleteIcon,
-  Storage as StorageIcon
+  Storage as StorageIcon,
+  Dashboard as DashboardIcon
 } from '@mui/icons-material';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -36,7 +37,7 @@ interface SidebarProps {
 const drawerWidth = 280;
 
 export const Sidebar = ({ onOpenSettings }: SidebarProps) => {
-  const { agents, currentAgentId, setCurrentAgent, addAgent, deleteAgent, sessions, currentSessionId, setCurrentSession, deleteSession, apiKeys } = useStore();
+  const { agents, currentAgentId, setCurrentAgent, addAgent, deleteAgent, sessions, currentSessionId, setCurrentSession, createSession, deleteSession, apiKeys, currentView, setCurrentView } = useStore();
   const [balance, setBalance] = React.useState<number | null>(null);
   const [showKnowledgeManager, setShowKnowledgeManager] = useState(false);
 
@@ -88,6 +89,16 @@ export const Sidebar = ({ onOpenSettings }: SidebarProps) => {
       <Box sx={{ p: 1 }}>
         <Button
           fullWidth
+          startIcon={<DashboardIcon />}
+          onClick={() => setCurrentView('dashboard')}
+          variant={currentView === 'dashboard' ? 'contained' : 'text'}
+          color={currentView === 'dashboard' ? 'primary' : 'inherit'}
+          sx={{ justifyContent: 'flex-start', mb: 1 }}
+        >
+          Командный центр
+        </Button>
+        <Button
+          fullWidth
           startIcon={<StorageIcon />}
           onClick={() => setShowKnowledgeManager(true)}
           color="inherit"
@@ -113,8 +124,8 @@ export const Sidebar = ({ onOpenSettings }: SidebarProps) => {
               }
             >
               <ListItemButton
-                selected={currentAgentId === agent.id}
-                onClick={() => setCurrentAgent(agent.id)}
+                selected={currentAgentId === agent.id && currentView === 'chat'}
+                onClick={() => { setCurrentAgent(agent.id); setCurrentView('chat'); }}
               >
                 <ListItemIcon sx={{ minWidth: 40 }}>
                   <BotIcon fontSize="small" />
@@ -127,7 +138,18 @@ export const Sidebar = ({ onOpenSettings }: SidebarProps) => {
         
         <Divider sx={{ my: 1 }} />
         
-        <List subheader={<Typography variant="caption" sx={{ px: 2, color: 'text.secondary' }}>ИСТОРИЯ</Typography>}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1 }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>ИСТОРИЯ</Typography>
+          <Tooltip title="Новый чат">
+            <IconButton 
+              size="small" 
+              onClick={() => { if (currentAgentId) { createSession(currentAgentId); setCurrentView('chat'); } }}
+            >
+              <AddIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Box>
+        <List>
           {sessions.map((session) => (
             <ListItem
               key={session.id}
@@ -139,8 +161,8 @@ export const Sidebar = ({ onOpenSettings }: SidebarProps) => {
               }
             >
               <ListItemButton
-                selected={currentSessionId === session.id}
-                onClick={() => setCurrentSession(session.id)}
+                selected={currentSessionId === session.id && currentView === 'chat'}
+                onClick={() => { setCurrentSession(session.id); setCurrentView('chat'); }}
               >
                 <ListItemIcon sx={{ minWidth: 40 }}>
                   <ChatIcon fontSize="small" />

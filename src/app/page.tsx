@@ -2,6 +2,7 @@
 
 import { Sidebar } from '@/components/Sidebar';
 import { ChatArea } from '@/components/ChatArea';
+import { DashboardView } from '@/components/DashboardView';
 import { AgentSettings } from '@/components/AgentSettings';
 import { SettingsModal } from '@/components/SettingsModal';
 import { useStore } from '@/store/store';
@@ -12,7 +13,7 @@ export default function Home() {
   const [showAgentSettings, setShowAgentSettings] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
-  const { currentAgentId } = useStore();
+  const { currentAgentId, currentView } = useStore();
 
   useEffect(() => {
     // Reconnect to MCP servers on startup
@@ -25,7 +26,11 @@ export default function Home() {
   return (
     <Box sx={{ display: 'flex', height: '100vh', width: '100%', overflow: 'hidden', bgcolor: 'background.default', color: 'text.primary' }}>
       <Sidebar onOpenSettings={() => setShowSettings(true)} />
-      <ChatArea onOpenAgentSettings={() => setShowAgentSettings(true)} />
+      {currentView === 'dashboard' ? (
+        <DashboardView />
+      ) : (
+        <ChatArea onOpenAgentSettings={() => setShowAgentSettings(true)} />
+      )}
       
       <AgentSettings 
         isOpen={showAgentSettings} 
